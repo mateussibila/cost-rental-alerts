@@ -62,6 +62,7 @@ The workflow runs automatically at **07:00 UTC** (~08:00 Ireland). You can also 
 - **With updates:** lists applications opened today + schemes opening in the next 14 days
 - **No updates:** sends `✅ No updates today.`
 - **Database:** `listings.db` (SQLite, committed to the repo after each run)
+- **CSV export:** `listings-export.csv` — regenerated and committed after each run; [view on GitHub](https://github.com/mateussibila/cost-rental-alerts/blob/main/listings-export.csv) (no terminal needed)
 
 ## Structure
 

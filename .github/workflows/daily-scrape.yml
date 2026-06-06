@@ -30,8 +30,11 @@ jobs:
           CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
         run: python run_daily.py
 
-      - name: Commit database updates
+      - name: Export CSV
+        run: python export_csv.py
+
+      - name: Commit database and CSV updates
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore: update listings.db"
-          file_pattern: listings.db
+          commit_message: "chore: update listings.db and listings-export.csv"
+          file_pattern: listings.db listings-export.csv
