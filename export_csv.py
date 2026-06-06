@@ -52,11 +52,11 @@ def export_csv() -> int:
         writer = csv.writer(handle)
         writer.writerow(
             [
-                "nome",
+                "name",
                 "location",
-                "endereco",
-                "preco",
-                "quantidade",
+                "address",
+                "price",
+                "quantity",
                 "beds",
                 "is_open",
                 "income_min",

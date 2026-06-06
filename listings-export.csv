@@ -1,4 +1,4 @@
-nome,location,endereco,preco,quantidade,beds,is_open,income_min,income_max,listed_at,open_on,close_on,source,link
+name,location,address,price,quantity,beds,is_open,income_min,income_max,listed_at,open_on,close_on,source,link
 Airton Plaza,Dublin - Belgard Road,"Airton Plaza, Belgard Road, Co. Dublin, Ireland",1715,20,2,FALSE,,,07/05/2025,07/05/2026,21/05/2026,affordablehomes,https://affordablehomes.ie/rent/airton-plaza-4/
 Airton Plaza,Dublin - Belgard Road,"Airton Plaza, Belgard Road, Co. Dublin, Ireland",1400,19,1,FALSE,,,11/04/2025,16/04/2026,30/04/2026,affordablehomes,https://affordablehomes.ie/rent/airton-plaza-0425/
 Airton Plaza,Dublin - Belgard Road,"Airton Plaza, Belgard Road, Co. Dublin, Ireland",1715,90,2,FALSE,,,15/01/2025,15/01/2026,29/01/2026,affordablehomes,https://affordablehomes.ie/rent/airton-plaza-2/

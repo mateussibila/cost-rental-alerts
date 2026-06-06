@@ -1,203 +1,203 @@
-# Cost Rental Alerts — resumo e backlog
+# Cost Rental Alerts — summary and backlog
 
-## Resumo do projeto
+## Project summary
 
-Alertas diários de **cost rental** na Irlanda. O sistema faz scrape de três fontes, guarda tudo num SQLite, detecta novidades e envia **WhatsApp** (CallMeBot) para revisão antes de publicar na Community Announcements.
+Daily **cost rental** alerts for Ireland. The system scrapes three sources, stores everything in SQLite, detects changes, and sends **WhatsApp** messages (CallMeBot) for review before posting to Community Announcements.
 
-| Peça | Ficheiro / destino |
+| Piece | File / destination |
 |---|---|
-| Scrape diário | `run_daily.py` → affordablehomes.ie, lda.ie, tuathhousing.ie |
-| Base de dados | `listings.db` (~202 schemes, `category = rent`) |
-| Export CSV | `export_csv.py` → `listings-export.csv` |
-| Alertas | `diff.py` + `notify.py` → CallMeBot |
-| Automação | GitHub Actions `.github/workflows/daily-scrape.yml` (07:00 UTC) |
+| Daily scrape | `run_daily.py` → affordablehomes.ie, lda.ie, tuathhousing.ie |
+| Database | `listings.db` (~202 schemes, `category = rent`) |
+| CSV export | `export_csv.py` → `listings-export.csv` |
+| Alerts | `diff.py` + `notify.py` → CallMeBot |
+| Automation | GitHub Actions `.github/workflows/daily-scrape.yml` (07:00 UTC) |
 
-**Colunas CSV hoje:** `nome`, `location` (derivada), `endereco` (Google Maps), `preco`, `quantidade`, `beds`, `is_open`, `income_min`, `income_max`, `listed_at`, `open_on`, `close_on`, `source`, `link`.
+**CSV columns today:** `name`, `location` (derived), `address` (Google Maps), `price`, `quantity`, `beds`, `is_open`, `income_min`, `income_max`, `listed_at`, `open_on`, `close_on`, `source`, `link`.
 
-**Comportamento WhatsApp:**
-- **1.ª execução com envio:** mensagem curta de bootstrap (“base criada, amanhã só novidades”).
-- **Dias seguintes:** só **novidades** — abriu hoje, mudou para open, ou abre nos próximos 14 dias. Sem news → `✅ No updates today.`
-- **Dedupe:** mesmo scheme em várias fontes → uma entrada (prioridade: affordablehomes > lda > tuath).
+**WhatsApp behaviour:**
+- **First run with send:** short bootstrap message (“database created, updates only from tomorrow”).
+- **Following days:** **updates only** — opened today, changed to open, or opening within 14 days. No news → `✅ No updates today.`
+- **Dedupe:** same scheme on multiple sources → one entry (priority: affordablehomes > lda > tuath).
 
-**Mensagem futura (planeado):** link hub (teu site) no topo; por listing, link curto Maps (`?q=lat,lng` ou `endereco`) + link Apply.
+**Planned message format:** hub link (your site) at the top; per listing, short Maps link (`?q=lat,lng` or `address`) + Apply link.
 
 ---
 
 # Future improvements
 
-Backlog de melhorias.
+Improvement backlog.
 
 ---
 
-## 1. Metragem por opção de imóvel
+## 1. Floor area per unit type
 
-**Objetivo:** extrair a área (m²) de cada opção/planta disponível num empreendimento.
+**Goal:** extract area (m²) for each available unit type / floor plan in a scheme.
 
-**Contexto:** muitos schemes têm 4–5 configurações diferentes (ex. 1-bed vs 2-bed, tipologias distintas). Hoje guardamos `beds` e `quantity` agregados; falta detalhe por unidade.
+**Context:** many schemes have 4–5 different configurations (e.g. 1-bed vs 2-bed, different layouts). Today we store aggregated `beds` and `quantity`; per-unit detail is missing.
 
-**Possível abordagem:**
-- Parsear a página de detalhe do affordablehomes (e LDA, se estruturado) em busca de tabelas ou blocos por tipologia
-- Modelar como sub-registos ou JSON no DB, ex.:
+**Possible approach:**
+- Parse affordablehomes detail pages (and LDA where structured) for tables or blocks per unit type
+- Model as sub-records or JSON in the DB, e.g.:
   ```json
   [
     { "beds": 1, "area_sqm": 52, "price": 1150 },
     { "beds": 2, "area_sqm": 68, "price": 1250 }
   ]
   ```
-- Incluir no CSV / planilha master como linhas expandidas ou coluna estruturada
+- Include in CSV / master spreadsheet as expanded rows or a structured column
 
-**Desafios:** layout pode variar entre schemes; alguns só mencionam área no PDF/brochure, não no HTML.
-
----
-
-## 2. Localização exata e link Maps
-
-**Estado:** parcial — coluna `endereco` no DB/CSV; AH `Location` + LDA maps link + Tuath normalizado.
-
-**Falta:**
-- `latitude`, `longitude` no DB (AH: `data-center` em `#map` na secção Location Map)
-- `maps_url` — `https://maps.google.com/?q=lat,lng` ou fallback `?q={endereco}`
-- Link Maps na mensagem WhatsApp (linha `📍` antes do Apply)
-- Hub site como primeiro link da mensagem (preview + entrada única)
+**Challenges:** layout varies between schemes; some only mention area in PDF/brochure, not HTML.
 
 ---
 
-## 3. Planilha master para utilizadores
+## 2. Exact location and Maps link
 
-**Objetivo:** disponibilizar aos utilizadores uma versão pública (ou semi-pública) dos dados — espelho do database, similar ao `listings-export.csv`.
+**Status:** partial — `address` column in DB/CSV; AH `Location` + LDA maps link + Tuath normalised.
 
-**Conteúdo base (aba "Master"):**
-- Cópia fiel do DB: `nome`, `preco`, `quantidade`, `beds`, `listed_at`, `open_on`, `close_on`, `source`, `link`
-- Futuro: metragem, endereço, coordenadas (itens 1 e 2)
-- Atualização automática após cada scrape diário
+**Remaining:**
+- `latitude`, `longitude` in DB (AH: `data-center` on `#map` in Location Map section)
+- `maps_url` — `https://maps.google.com/?q=lat,lng` or fallback `?q={address}`
+- Maps link in WhatsApp message (`📍` line before Apply)
+- Hub site as first link in the message (preview + single entry point)
 
-**Aba interativa — "Distance to":**
-- Dropdown com destinos pré-definidos, ex.:
+---
+
+## 3. Master spreadsheet for users
+
+**Goal:** provide users a public (or semi-public) data view — mirror of the database, similar to `listings-export.csv`.
+
+**Base content (“Master” tab):**
+- Faithful DB copy: `name`, `price`, `quantity`, `beds`, `listed_at`, `open_on`, `close_on`, `source`, `link`
+- Future: floor area, address, coordinates (items 1 and 2)
+- Auto-update after each daily scrape
+
+**Interactive tab — “Distance to”:**
+- Dropdown with preset destinations, e.g.:
   - Dublin City Centre
   - Heuston Station
   - Connolly Station
   - Dublin Airport
-  - (outros pontos de referência)
-- Ao selecionar destino, calcular e mostrar distância/tempo estimado por carro ou transporte público
-- Requer coordenadas do item 2 + API de routing (Google Distance Matrix, OSRM, etc.)
+  - (other reference points)
+- On selection, compute and show distance / estimated travel time by car or public transport
+- Requires coordinates from item 2 + routing API (Google Distance Matrix, OSRM, etc.)
 
-**Formato possível:**
-- Google Sheets (Apps Script + export CSV do repo)
-- Excel online
-- Página web simples com filtros + export CSV (evolução natural do projeto)
+**Possible formats:**
+- Google Sheets (Apps Script + CSV export from repo)
+- Online Excel
+- Simple web page with filters + CSV export (natural project evolution)
 
-**Notas:**
-- Planilha master ≠ notificações WhatsApp — é consulta e comparação
-- Considerar lag de atualização (1×/dia) e disclaimer de dados não oficiais
+**Notes:**
+- Master spreadsheet ≠ WhatsApp notifications — for browsing and comparison
+- Consider update lag (1×/day) and unofficial-data disclaimer
 
 ---
 
-## 4. Site hub + mapa interativo — **alta prioridade**
+## 4. Hub site + interactive map — **high priority**
 
-**Objetivo:** site público como entrada principal (link no topo das mensagens WhatsApp) + mapa com todos os empreendimentos filtráveis.
+**Goal:** public site as the main entry point (link at top of WhatsApp messages) + map with all filterable schemes.
 
-**Porquê alta prioridade:** localização é critério decisivo; WhatsApp só alerta — o site é onde a pessoa explora e compara.
+**Why high priority:** location is a key decision factor; WhatsApp only alerts — the site is where people explore and compare.
 
-### Homepage — 3 boxes no topo
+### Homepage — 3 boxes at the top
 
-Três caixas clicáveis, sempre visíveis acima do fold. Cada uma leva à **mesma página de listagem** (`/listings` ou `/schemes`), mas com **filtro de status pré-aplicado** via query string:
+Three clickable boxes, always visible above the fold. Each goes to the **same listings page** (`/listings` or `/schemes`), but with a **pre-applied status filter** via query string:
 
-| Box | Label UI | Filtro | Critério sugerido (DB) |
+| Box | UI label | Filter | Suggested DB criteria |
 |---|---|---|---|
 | 1 | **Apply now** | `status=open` | `status = 'open'` |
-| 2 | **Opening soon** | `status=soon` | `applications_open_at` nos próximos 14 dias e ainda não open |
-| 3 | **Recently closed** | `status=closed` | `status = 'closed'` e `applications_close_at` nos últimos 30 dias (ou `status_changed_at` recente) |
+| 2 | **Opening soon** | `status=soon` | `applications_open_at` within next 14 days and not yet open |
+| 3 | **Recently closed** | `status=closed` | `status = 'closed'` and `applications_close_at` in last 30 days (or recent `status_changed_at`) |
 
-**URLs exemplo:**
+**Example URLs:**
 - `/listings?filter=open`
 - `/listings?filter=soon`
 - `/listings?filter=closed`
 
-A página de listagem mostra **todos** os schemes (tabela + mapa opcional), com o filtro activo e possibilidade de mudar/remover filtros (preço, beds, county, etc.). Os boxes da homepage podem mostrar **contagem** actualizada (ex. “Apply now · 5”).
+The listings page shows **all** schemes (table + optional map), with the active filter and ability to change/remove filters (price, beds, county, etc.). Homepage boxes can show an **updated count** (e.g. “Apply now · 5”).
 
-**Homepage — resto:** link WhatsApp / como funciona; última actualização do scrape; disclaimer dados não oficiais.
+**Homepage — rest:** WhatsApp link / how it works; last scrape timestamp; unofficial-data disclaimer.
 
-### Página de listagem + mapa
+### Listings page + map
 
-**Funcionalidades:**
-- **Mapa:** pins para cada scheme open (coordenadas do item 2)
-- **Popup no pin:** nome, preço, beds, quantidade, link, datas open/close
-- **Filtros / toggles:**
-  - Preço (min–max ou faixas)
-  - Quartos (1, 2, 3, 1–3, etc.)
-  - Região / county / raio a partir de um ponto
+**Features:**
+- **Map:** pins for each open scheme (coordinates from item 2)
+- **Pin popup:** name, price, beds, quantity, link, open/close dates
+- **Filters / toggles:**
+  - Price (min–max or bands)
+  - Bedrooms (1, 2, 3, 1–3, etc.)
+  - Region / county / radius from a point
   - Status: open only (default), opening soon, etc.
-- Mapa actualiza ao mudar filtros — só mostra pins que passam nos critérios
-- Lista lateral sincronizada com o mapa (opcional)
+- Map updates when filters change — only pins matching criteria
+- Side list synced with map (optional)
 
-**Stack possível:**
-- Frontend estático (GitHub Pages / Cloudflare Pages) + JSON exportado do DB após cada scrape
-- Google Maps JavaScript API (Maps + markers; eventualmente Places)
-- Alternativa open-source: Leaflet + OpenStreetMap (sem custo de API)
+**Possible stack:**
+- Static frontend (GitHub Pages / Cloudflare Pages) + JSON exported from DB after each scrape
+- Google Maps JavaScript API (Maps + markers; eventually Places)
+- Open-source alternative: Leaflet + OpenStreetMap (no API cost)
 
-**Dependências:** item 2 (coordenadas) é **bloqueante** para mapa preciso; item 1 (m²) é nice-to-have no popup.
+**Dependencies:** item 2 (coordinates) is **blocking** for an accurate map; item 1 (m²) is nice-to-have in the popup.
 
-**MVP sugerido:**
-1. Homepage com 3 boxes → `/listings?filter=…`
-2. Export `listings.json` após cada scrape (todos os status + lat/lng + `maps_url`)
-3. Listagem com filtros URL-sync (open / soon / closed + preço, beds, county)
-4. Mapa com pins que reflectem filtros activos
+**Suggested MVP:**
+1. Homepage with 3 boxes → `/listings?filter=…`
+2. Export `listings.json` after each scrape (all statuses + lat/lng + `maps_url`)
+3. Listings with URL-synced filters (open / soon / closed + price, beds, county)
+4. Map with pins reflecting active filters
 
 ---
 
-## 5. Gráfico histórico de preço por m² por região
+## 5. Historical price per m² by region chart
 
-**Objetivo:** visualizar evolução do preço por metro quadrado ao longo do tempo, agregado por região.
+**Goal:** visualise price per square metre over time, aggregated by region.
 
-**Contexto:** com histórico no DB (múltiplas rondas do mesmo nome, ex. Airton Plaza) e metragem por tipologia (item 1), é possível calcular €/m² e tendências regionais.
+**Context:** with DB history (multiple rounds of the same name, e.g. Airton Plaza) and area per unit type (item 1), we can compute €/m² and regional trends.
 
-**Métrica:**
+**Metric:**
 ```
-preco_por_m2 = price_from / area_sqm
+price_per_m2 = price_from / area_sqm
 ```
-- Uma entrada por tipologia quando houver várias plantas
-- Região: county, Dublin postal district, ou cluster geográfico
+- One entry per unit type when multiple floor plans exist
+- Region: county, Dublin postal district, or geographic cluster
 
-**Visualização:**
-- Linha temporal por região (ex. Dublin, Wicklow, Wexford)
-- Box plot ou barras para comparar regiões no mesmo período
-- Opcional: filtro por beds (1-bed vs 2-bed têm €/m² diferentes)
+**Visualisation:**
+- Time series per region (e.g. Dublin, Wicklow, Wexford)
+- Box plot or bars to compare regions in the same period
+- Optional: filter by beds (1-bed vs 2-bed have different €/m²)
 
-**Dados necessários:**
-- Histórico de preços já parcialmente no DB (`listed_at`, múltiplos slugs por scheme)
-- Metragem (item 1) — sem m², o gráfico não é possível
-- Região normalizada (derivada de `location` ou geocoding do item 2)
+**Data required:**
+- Price history already partly in DB (`listed_at`, multiple slugs per scheme)
+- Floor area (item 1) — without m², the chart is not possible
+- Normalised region (derived from `location` or geocoding from item 2)
 
-**Onde viver:** secção do webapp (item 4) ou dashboard separado; pode partilhar a mesma API/JSON.
+**Where it lives:** section of the webapp (item 4) or separate dashboard; can share the same API/JSON.
 
-**Desafios:**
-- Schemes antigos podem não ter m² no HTML
-- Mesmo empreendimento, rondas com tipologias diferentes — agregar com cuidado
-- Definir "região" de forma consistente (county vs neighbourhood)
-
----
-
-## 6. Rendimento mínimo e máximo — **feito (LDA)**
-
-**Estado:** `income_min` / `income_max` no DB e CSV; parse da tabela de elegibilidade LDA.
-
-**Falta (opcional):**
-- Extrair income em affordablehomes e Tuath
-- `income_region` (Dublin vs resto) quando limites diferem
-- Filtro “my income: €X” no webapp (item 4)
+**Challenges:**
+- Older schemes may lack m² in HTML
+- Same development, different rounds with different unit types — aggregate carefully
+- Define “region” consistently (county vs neighbourhood)
 
 ---
 
-## Prioridades sugeridas
+## 6. Minimum and maximum income — **done (LDA)**
 
-| Prioridade | Item | Razão |
+**Status:** `income_min` / `income_max` in DB and CSV; parsed from LDA eligibility table.
+
+**Remaining (optional):**
+- Extract income limits from affordablehomes and Tuath
+- `income_region` (Dublin vs elsewhere) when limits differ
+- “My income: €X” filter in webapp (item 4)
+
+---
+
+## Suggested priorities
+
+| Priority | Item | Reason |
 |---|---|---|
-| **Alta** | 2 (resto) → 4 | `maps_url` + lat/lng + site (3 boxes + listagem filtrável) |
-| Média | WhatsApp + site | Hub no topo da msg; Maps + Apply por listing |
-| Média | 1 → 5 | m² desbloqueia €/m² e gráficos regionais |
-| Média | 3 | Planilha master — baixo esforço, complementa mapa |
-| Baixa | 5 | Gráfico histórico — requer volume de dados + m² |
+| **High** | 2 (remainder) → 4 | `maps_url` + lat/lng + site (3 boxes + filterable listings) |
+| Medium | WhatsApp + site | Hub at top of message; Maps + Apply per listing |
+| Medium | 1 → 5 | m² unlocks €/m² and regional charts |
+| Medium | 3 | Master spreadsheet — low effort, complements map |
+| Low | 5 | Historical chart — needs data volume + m² |
 
 ---
 
-*Última atualização: 2026-06-06*
+*Last updated: 2026-06-06*

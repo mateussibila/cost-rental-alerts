@@ -1,21 +1,21 @@
 # Cost Rental Alerts
 
-Scraper diário para habitação acessível (cost rental) na Irlanda.
+Daily scraper for affordable housing (cost rental) in Ireland.
 
-**Fontes:** [affordablehomes.ie](https://affordablehomes.ie/rent/), [LDA](https://lda.ie/affordable-homes/lda-cost-rental/), [Tuath Housing](https://tuathhousing.ie/cost-rental/)
+**Sources:** [affordablehomes.ie](https://affordablehomes.ie/rent/), [LDA](https://lda.ie/affordable-homes/lda-cost-rental/), [Tuath Housing](https://tuathhousing.ie/cost-rental/)
 
-**Output:** mensagem WhatsApp (via CallMeBot) no teu número privado — revês e publicas na Community Announcements.
+**Output:** WhatsApp message (via CallMeBot) to your private number — you review and post to Community Announcements.
 
-## Setup rápido
+## Quick setup
 
-### 1. CallMeBot (uma vez)
+### 1. CallMeBot (one-time)
 
-1. Adiciona `+34 644 31 95 65` aos contactos do telemóvel (nome: CallMeBot)
-2. Envia no WhatsApp: `I allow callmebot to send me messages`
-3. Recebes uma resposta com o teu `apikey`
-4. Guarda o apikey — não commits no código
+1. Add `+34 644 31 95 65` to your phone contacts (name: CallMeBot)
+2. Send on WhatsApp: `I allow callmebot to send me messages`
+3. You receive a reply with your `apikey`
+4. Save the apikey — do not commit it to the repo
 
-### 2. Repositório GitHub (privado)
+### 2. GitHub repository (private)
 
 ```bash
 cd cost-rental-alerts
@@ -27,27 +27,27 @@ gh repo create cost-rental-alerts --private --source=. --push
 
 ### 3. GitHub Secrets
 
-Em **Settings → Secrets and variables → Actions → New repository secret**:
+In **Settings → Secrets and variables → Actions → New repository secret**:
 
-| Secret | Valor |
+| Secret | Value |
 |---|---|
-| `CALLMEBOT_PHONE` | Teu número com código país, ex. `+353871234567` |
-| `CALLMEBOT_APIKEY` | Apikey recebida do CallMeBot |
+| `CALLMEBOT_PHONE` | Your number with country code, e.g. `+353871234567` |
+| `CALLMEBOT_APIKEY` | Apikey received from CallMeBot |
 
-### 4. Testar localmente
+### 4. Test locally
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# 1ª vez: só cria a base (recomendado antes do WhatsApp automático)
+# First time: create the database only (recommended before automatic WhatsApp)
 python run_daily.py --scrape-only
 
-# Ver mensagem sem enviar
+# Preview message without sending
 python run_daily.py --dry-run
 
-# Enviar para o teu WhatsApp (exporta secrets localmente)
+# Send to your WhatsApp (export secrets locally)
 export CALLMEBOT_PHONE="+353..."
 export CALLMEBOT_APIKEY="..."
 python run_daily.py
@@ -55,21 +55,21 @@ python run_daily.py
 
 ### 5. GitHub Actions
 
-O workflow corre automaticamente às **07:00 UTC** (~08:00 Irlanda). Podes também correr manualmente em **Actions → Daily Cost Rental Scrape → Run workflow**.
+The workflow runs automatically at **07:00 UTC** (~08:00 Ireland). You can also run it manually via **Actions → Daily Cost Rental Scrape → Run workflow**.
 
-## Comportamento
+## Behaviour
 
-- **Com novidades:** lista inscrições abertas hoje + esquemas que abrem nos próximos 14 dias
-- **Sem novidades:** envia `✅ Nenhuma novidade hoje.`
-- **Base de dados:** `listings.db` (SQLite, commitado no repo após cada run)
+- **With updates:** lists applications opened today + schemes opening in the next 14 days
+- **No updates:** sends `✅ No updates today.`
+- **Database:** `listings.db` (SQLite, committed to the repo after each run)
 
-## Estrutura
+## Structure
 
 ```
 run_daily.py          # entrypoint
 scrapers/             # affordablehomes, lda, tuath
 db.py                 # SQLite
-diff.py               # detecta novidades
-notify.py             # formata + CallMeBot
-.github/workflows/    # cron diário
+diff.py               # detects updates
+notify.py             # formats message + CallMeBot
+.github/workflows/    # daily cron
 ```

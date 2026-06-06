@@ -1,8 +1,8 @@
-# Empreendimentos — cost rental
+# Schemes — cost rental
 
-Total: **202** entries (último scrape)
+Total: **202** entries (last scrape)
 
-| Nome | Preço | Listed at | Open on | Close on |
+| Name | Price | Listed at | Open on | Close on |
 |------|-------|-----------|---------|----------|
 | Airton Plaza | €1,715 | 07/05/2025 | 07/05/2026 | 21/05/2026 |
 | Airton Plaza | €1,400 | 11/04/2025 | 16/04/2026 | 30/04/2026 |
