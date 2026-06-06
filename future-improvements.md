@@ -92,11 +92,32 @@ Backlog de melhorias.
 
 ---
 
-## 4. Webapp com mapa interativo — **alta prioridade**
+## 4. Site hub + mapa interativo — **alta prioridade**
 
-**Objetivo:** mapa (Google Maps custom) com todos os empreendimentos **abertos**, filtrável em tempo real.
+**Objetivo:** site público como entrada principal (link no topo das mensagens WhatsApp) + mapa com todos os empreendimentos filtráveis.
 
-**Porquê alta prioridade:** localização é critério decisivo para muita gente; hoje os dados existem mas não há forma visual de comparar por zona.
+**Porquê alta prioridade:** localização é critério decisivo; WhatsApp só alerta — o site é onde a pessoa explora e compara.
+
+### Homepage — 3 boxes no topo
+
+Três caixas clicáveis, sempre visíveis acima do fold. Cada uma leva à **mesma página de listagem** (`/listings` ou `/schemes`), mas com **filtro de status pré-aplicado** via query string:
+
+| Box | Label UI | Filtro | Critério sugerido (DB) |
+|---|---|---|---|
+| 1 | **Apply now** | `status=open` | `status = 'open'` |
+| 2 | **Opening soon** | `status=soon` | `applications_open_at` nos próximos 14 dias e ainda não open |
+| 3 | **Recently closed** | `status=closed` | `status = 'closed'` e `applications_close_at` nos últimos 30 dias (ou `status_changed_at` recente) |
+
+**URLs exemplo:**
+- `/listings?filter=open`
+- `/listings?filter=soon`
+- `/listings?filter=closed`
+
+A página de listagem mostra **todos** os schemes (tabela + mapa opcional), com o filtro activo e possibilidade de mudar/remover filtros (preço, beds, county, etc.). Os boxes da homepage podem mostrar **contagem** actualizada (ex. “Apply now · 5”).
+
+**Homepage — resto:** link WhatsApp / como funciona; última actualização do scrape; disclaimer dados não oficiais.
+
+### Página de listagem + mapa
 
 **Funcionalidades:**
 - **Mapa:** pins para cada scheme open (coordenadas do item 2)
@@ -117,9 +138,10 @@ Backlog de melhorias.
 **Dependências:** item 2 (coordenadas) é **bloqueante** para mapa preciso; item 1 (m²) é nice-to-have no popup.
 
 **MVP sugerido:**
-1. Export `listings-open.json` com lat/lng + campos do CSV
-2. Página única: mapa + 3 filtros (preço, beds, county)
-3. Só schemes `status = open`
+1. Homepage com 3 boxes → `/listings?filter=…`
+2. Export `listings.json` após cada scrape (todos os status + lat/lng + `maps_url`)
+3. Listagem com filtros URL-sync (open / soon / closed + preço, beds, county)
+4. Mapa com pins que reflectem filtros activos
 
 ---
 
@@ -170,8 +192,8 @@ preco_por_m2 = price_from / area_sqm
 
 | Prioridade | Item | Razão |
 |---|---|---|
-| **Alta** | 2 (resto) → 4 | `maps_url` + lat/lng + mapa filtrável |
-| Média | Hub site + WhatsApp | Primeiro link = teu site; Maps + Apply por listing |
+| **Alta** | 2 (resto) → 4 | `maps_url` + lat/lng + site (3 boxes + listagem filtrável) |
+| Média | WhatsApp + site | Hub no topo da msg; Maps + Apply por listing |
 | Média | 1 → 5 | m² desbloqueia €/m² e gráficos regionais |
 | Média | 3 | Planilha master — baixo esforço, complementa mapa |
 | Baixa | 5 | Gráfico histórico — requer volume de dados + m² |
