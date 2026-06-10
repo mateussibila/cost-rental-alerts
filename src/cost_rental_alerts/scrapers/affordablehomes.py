@@ -20,6 +20,8 @@ BASE_URL = "https://affordablehomes.ie"
 RENT_URL = f"{BASE_URL}/rent/"
 CALENDAR_URL = f"{BASE_URL}/rent/calendar/"
 
+CalendarEventDate = date | Tuple[int, int]
+
 
 def _parse_iso_date(value: str | None) -> date | None:
     if not value:
@@ -42,10 +44,29 @@ def _iso_from_month_day(month: int, day: int, year: int) -> str | None:
     return parsed.isoformat() if parsed else None
 
 
-def _calendar_events(html: str) -> Dict[str, Dict[str, Tuple[int, int]]]:
-    """Map slug -> {opened_md, closed_md} as (month, day) from calendar page."""
+def _calendar_year(article) -> int | None:
+    section = article.find_parent("section", class_="calendar")
+    if not section:
+        return None
+
+    label = section.get("aria-labelledby", "")
+    match = re.search(r"\byear-(\d{4})\b", label)
+    if match:
+        return int(match.group(1))
+
+    heading = section.select_one("h3.year")
+    if heading:
+        match = re.search(r"\b(\d{4})\b", heading.get_text(" ", strip=True))
+        if match:
+            return int(match.group(1))
+
+    return None
+
+
+def _calendar_events(html: str) -> Dict[str, Dict[str, CalendarEventDate]]:
+    """Map slug -> calendar open/close events, preserving year when present."""
     soup = BeautifulSoup(html, "html.parser")
-    events: Dict[str, Dict[str, Tuple[int, int]]] = {}
+    events: Dict[str, Dict[str, CalendarEventDate]] = {}
 
     for article in soup.select("article.calendar"):
         day_el = article.select_one("h4 span")
@@ -58,13 +79,14 @@ def _calendar_events(html: str) -> Dict[str, Dict[str, Tuple[int, int]]]:
             month = datetime.strptime(month_name, "%b").month
         except ValueError:
             continue
+        year = _calendar_year(article)
 
         for block in article.select("div.open, div.close"):
             classes = block.get("class", [])
             if "open" in classes:
-                event_type = "opened_md"
+                event_type = "opened"
             elif "close" in classes:
-                event_type = "closed_md"
+                event_type = "closed"
             else:
                 continue
 
@@ -74,15 +96,64 @@ def _calendar_events(html: str) -> Dict[str, Dict[str, Tuple[int, int]]]:
                 if not slug_match:
                     continue
                 slug = slug_match.group(1)
+                event_date: CalendarEventDate
+                if year is None:
+                    event_date = (month, day)
+                else:
+                    parsed = _date_from_month_day(month, day, year)
+                    if parsed is None:
+                        continue
+                    event_date = parsed
+
                 bucket = events.setdefault(slug, {})
-                bucket[event_type] = (month, day)
+                existing = bucket.get(event_type)
+                if isinstance(existing, date) and not isinstance(event_date, date):
+                    continue
+                bucket[event_type] = event_date
 
     return events
 
 
+def _calendar_event_to_date(
+    event: CalendarEventDate | None,
+    anchor_year: int | None,
+) -> date | None:
+    if event is None:
+        return None
+    if isinstance(event, date):
+        return event
+    if anchor_year is None:
+        return None
+    return _date_from_month_day(event[0], event[1], anchor_year)
+
+
+def _resolve_explicit_calendar_dates(
+    opened_event: CalendarEventDate | None,
+    closed_event: CalendarEventDate | None,
+) -> Tuple[str | None, str | None] | None:
+    if not isinstance(opened_event, date) and not isinstance(closed_event, date):
+        return None
+
+    anchor_year = None
+    if isinstance(opened_event, date):
+        anchor_year = opened_event.year
+    elif isinstance(closed_event, date):
+        anchor_year = closed_event.year
+
+    opened = _calendar_event_to_date(opened_event, anchor_year)
+    closed = _calendar_event_to_date(closed_event, anchor_year)
+    if opened and closed and closed < opened and not isinstance(closed_event, date):
+        closed = _date_from_month_day(closed.month, closed.day, opened.year + 1)
+
+    return (
+        opened.isoformat() if opened else None,
+        closed.isoformat() if closed else None,
+    )
+
+
 def _resolve_calendar_dates(
-    opened_md: Tuple[int, int] | None,
-    closed_md: Tuple[int, int] | None,
+    opened_event: CalendarEventDate | None,
+    closed_event: CalendarEventDate | None,
     listing: Listing,
     today: date,
 ) -> Tuple[str | None, str | None]:
@@ -92,6 +163,12 @@ def _resolve_calendar_dates(
     The AH calendar has no year; using the current year for every June event
     turns past rounds (e.g. listed 2025) into false "opening soon" alerts.
     """
+    explicit_dates = _resolve_explicit_calendar_dates(opened_event, closed_event)
+    if explicit_dates is not None:
+        return explicit_dates
+
+    opened_md = opened_event if isinstance(opened_event, tuple) else None
+    closed_md = closed_event if isinstance(closed_event, tuple) else None
     listed = _parse_iso_date(listing.listed_at)
     listed_year = listed.year if listed else None
 
@@ -320,9 +397,9 @@ def scrape_affordablehomes() -> List[Listing]:
         slug = listing.id.split(":", 1)[1]
         if slug not in events:
             continue
-        opened_md = events[slug].get("opened_md")
-        closed_md = events[slug].get("closed_md")
-        open_at, close_at = _resolve_calendar_dates(opened_md, closed_md, listing, today)
+        opened = events[slug].get("opened")
+        closed = events[slug].get("closed")
+        open_at, close_at = _resolve_calendar_dates(opened, closed, listing, today)
         if open_at:
             listing.applications_open_at = open_at
         if close_at:

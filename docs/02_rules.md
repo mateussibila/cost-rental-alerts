@@ -49,7 +49,9 @@ Bootstrap: first WhatsApp/email send is a short setup message; no flood of all o
 
 ## Date inference (affordablehomes)
 
-AH calendar events show day/month only (no year). Year is inferred per listing using:
+AH calendar events are parsed with their year when they appear inside a
+`year-YYYY` calendar section. Events without an explicit year (for example the
+top-level Upcoming section) fall back to year inference per listing using:
 
 - `listed_at`
 - current `status`
