@@ -8,10 +8,19 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,8 +45,23 @@ jobs:
       - name: Export CSV
         run: python -m cost_rental_alerts.export_csv
 
-      - name: Commit database and CSV updates
+      - name: Export GitHub Pages dashboard
+        run: python -m cost_rental_alerts.export_site
+
+      - name: Commit database, CSV, and dashboard updates
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore: update listings.db and CSV exports"
-          file_pattern: data/listings.db data/listings-export.csv data/listings-open.csv
+          commit_message: "chore: update listings data and dashboard"
+          file_pattern: data/listings.db data/listings-export.csv data/listings-open.csv site/index.html
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload dashboard artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy dashboard
+        id: deployment
+        uses: actions/deploy-pages@v4

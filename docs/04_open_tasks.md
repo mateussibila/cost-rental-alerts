@@ -63,7 +63,7 @@ Public data view mirroring DB + optional “Distance to” tab with routing API.
 
 ### 4. Hub site + interactive map (high priority)
 
-Homepage with 3 boxes (Apply now / Opening soon / Recently closed) → filterable listings page + map pins. MVP: export `listings.json` after each scrape.
+Private GitHub Pages dashboard exists with Apply now / Opening soon / Closing soon sections. Remaining: export `listings.json` after each scrape and add interactive map pins.
 
 ### 5. Historical price per m² by region
 

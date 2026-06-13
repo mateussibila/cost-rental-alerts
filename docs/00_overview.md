@@ -15,10 +15,13 @@ Daily **cost rental** alerts for Ireland. The system scrapes three sources, stor
 | Database | `data/listings.db` (~200 schemes, `category = rent`) |
 | CSV (all) | `data/listings-export.csv` |
 | CSV (open only) | `data/listings-open.csv` |
+| Private dashboard | GitHub Pages — Apply now, Opening soon, Closing soon |
 | Alerts | WhatsApp + email via `notify.py` |
 | Automation | GitHub Actions — 07:00 UTC daily |
 
 **CSV on GitHub:** [all schemes](https://github.com/mateussibila/cost-rental-alerts/blob/main/data/listings-export.csv) · [open only](https://github.com/mateussibila/cost-rental-alerts/blob/main/data/listings-open.csv)
+
+**Dashboard:** https://mateussibila.github.io/cost-rental-alerts/
 
 ## User flow
 
