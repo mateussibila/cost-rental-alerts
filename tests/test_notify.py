@@ -81,6 +81,35 @@ class NotifyMessageTests(unittest.TestCase):
         self.assertIn("Opening Scheme", message)
         self.assertIn("Opens: 20/06/26", message)
 
+    def test_new_application_is_not_repeated_in_closing_soon(self):
+        lancaster = _item(
+            "lancastergate3",
+            "Lancaster Gate",
+            notification_type="new_open",
+            status="open",
+            close_at="2026-06-17",
+        )
+
+        message = notify.format_message(
+            [lancaster],
+            total_scraped=180,
+            closing_soon=[
+                lancaster,
+                _item(
+                    "folkstown",
+                    "Folkstown Park",
+                    notification_type="closing_soon",
+                    status="open",
+                    close_at="2026-06-14",
+                ),
+            ],
+        )
+
+        self.assertIn("📢 NEW APPLICATIONS (1):", message)
+        self.assertIn("⏳ CLOSING SOON (1):", message)
+        self.assertEqual(message.count("Lancaster Gate"), 1)
+        self.assertIn("Folkstown Park", message)
+
 
 if __name__ == "__main__":
     unittest.main()

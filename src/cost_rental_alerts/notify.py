@@ -141,6 +141,20 @@ def _dedupe_news(items: List[NewsItem]) -> List[NewsItem]:
     return list(best.values())
 
 
+def _identity_keys(item: NewsItem) -> set[str]:
+    return {key for key in (item.listing_id, item.scheme_key) if key}
+
+
+def _exclude_items(
+    items: List[NewsItem],
+    excluded: List[NewsItem],
+) -> List[NewsItem]:
+    excluded_keys: set[str] = set()
+    for item in excluded:
+        excluded_keys.update(_identity_keys(item))
+    return [item for item in items if _identity_keys(item).isdisjoint(excluded_keys)]
+
+
 def _append_listing_section(
     lines: List[str],
     heading: str,
@@ -194,8 +208,8 @@ def format_message(
         if opening_soon is not None
         else [n for n in news if n.notification_type == "opening_soon"]
     )
-    soon = _dedupe_news(soon_source)
-    closing = _dedupe_news(closing_soon or [])
+    soon = _exclude_items(_dedupe_news(soon_source), opened)
+    closing = _exclude_items(_dedupe_news(closing_soon or []), opened)
 
     if opened:
         _append_listing_section(
