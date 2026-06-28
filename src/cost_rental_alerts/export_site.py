@@ -305,13 +305,13 @@ def render_scheme_card(scheme: Scheme, *, extra_badges: Iterable[str] = ()) -> s
         if badge
     )
     details = [
-        render_detail("Location", scheme.location),
-        render_detail("Price from", money(scheme.price)),
-        render_detail("Homes", scheme.quantity or "TBC"),
-        render_detail("Bedrooms", scheme.beds or "TBC"),
-        render_detail("Income", income_range(scheme)),
-        render_detail("Opens", scheme.open_on or "Not listed"),
-        render_detail("Closes", scheme.close_on or "Not listed"),
+        render_detail("📍 Location", scheme.location),
+        render_detail("💰 Price from", money(scheme.price)),
+        render_detail("🏠 Homes", scheme.quantity or "TBC"),
+        render_detail("🛏️ Bedrooms", scheme.beds or "TBC"),
+        render_detail("💶 Income", income_range(scheme)),
+        render_detail("📅 Opens", scheme.open_on or "Not listed"),
+        render_detail("⏰ Closes", scheme.close_on or "Not listed"),
     ]
     address = (
         f'<p class="address">{escape(scheme.address)}</p>' if scheme.address else ""
