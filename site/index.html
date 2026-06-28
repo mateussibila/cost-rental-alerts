@@ -230,6 +230,102 @@
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       gap: 16px;
     }
+    .scheme-table-wrap {
+      display: none;
+    }
+    .scheme-table-panel {
+      overflow-x: auto;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+    .scheme-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+    .scheme-table thead {
+      background: #f8fafc;
+      border-bottom: 1px solid var(--line);
+    }
+    .scheme-table th {
+      padding: 14px 12px;
+      text-align: left;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .scheme-table td {
+      padding: 14px 12px;
+      border-top: 1px solid #eef2f7;
+      vertical-align: top;
+    }
+    .scheme-table th:nth-child(3),
+    .scheme-table th:nth-child(4),
+    .scheme-table th:nth-child(5),
+    .scheme-table th:nth-child(6),
+    .scheme-table th:nth-child(7),
+    .scheme-table th:nth-child(8),
+    .scheme-table td:nth-child(3),
+    .scheme-table td:nth-child(4),
+    .scheme-table td:nth-child(5),
+    .scheme-table td:nth-child(6),
+    .scheme-table td:nth-child(7),
+    .scheme-table td:nth-child(8) {
+      text-align: center;
+    }
+    .scheme-table tbody tr:hover {
+      background: #fafcff;
+    }
+    .scheme-row[hidden] { display: none; }
+    .table-scheme {
+      min-width: 180px;
+    }
+    .table-scheme strong {
+      display: block;
+      font-size: 0.98rem;
+      line-height: 1.25;
+    }
+    .table-scheme__address {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.35;
+      max-width: 240px;
+    }
+    .table-links .source-link {
+      min-height: 32px;
+      padding: 0 10px;
+      font-size: 0.82rem;
+      border-radius: 10px;
+    }
+    .table-report {
+      white-space: nowrap;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    @media (min-width: 960px) {
+      .scheme-grid--cards {
+        display: none;
+      }
+      .scheme-table-wrap {
+        display: block;
+      }
+    }
     .scheme-card {
       display: flex;
       min-height: 100%;
@@ -424,7 +520,7 @@
         <h1>Ireland Cost Rental Hub</h1>
         <p>Cost rental schemes in Ireland — apply now and opening soon. Updated daily from affordablehomes.ie, LDA, and Tuath Housing.</p>
       </div>
-      <div class="updated">Updated 28 Jun 2026 13:45 IST</div>
+      <div class="updated">Updated 28 Jun 2026 13:51 IST</div>
     </header>
 
     <section class="summary" aria-label="Scheme summary">
@@ -450,7 +546,7 @@
       <h2 class="section-title">🟢 Apply now<span class="info-tip" tabindex="0" role="button" aria-label="Section information"><span class="info-tip__icon" aria-hidden="true">i</span><span class="info-tip__popup">Open application windows. Schemes with a close date are sorted first so the earliest deadlines are easiest to spot. This app is in test phase. If you find inconsistencies, please use the Report button and we will work on fixing the problem.</span></span></h2>
     </div>
   </div>
-  <div class="scheme-grid">
+  <div class="scheme-grid scheme-grid--cards">
     <article class="scheme-card" data-search="carrigmore woods dublin - citywest carrigmore woods, citywest, co. dublin, ireland open 1595 1 2 23/06/2026 30/06/2026 affordablehomes">
   <div class="scheme-card__header">
     <div>
@@ -542,6 +638,98 @@
   </div>
 </article>
   </div>
+  <div class="scheme-table-wrap">
+    <div class="scheme-table-panel">
+  <table class="scheme-table">
+    <thead>
+      <tr>
+        <th scope="col">Scheme</th>
+        <th scope="col">📍 Location</th>
+        <th scope="col">💰 Price</th>
+        <th scope="col">🛏️ Beds</th>
+        <th scope="col">🏠 Homes</th>
+        <th scope="col">💶 Income</th>
+        <th scope="col">📅 Opens</th>
+        <th scope="col">⏰ Closes</th>
+        <th scope="col">Links</th>
+        <th scope="col"><span class="sr-only">Report</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="scheme-row" data-search="carrigmore woods dublin - citywest carrigmore woods, citywest, co. dublin, ireland open 1595 1 2 23/06/2026 30/06/2026 affordablehomes">
+  <td class="table-scheme"><strong>Carrigmore Woods</strong><span class="table-scheme__address">Carrigmore Woods, Citywest, Co. Dublin, Ireland</span></td>
+  <td>Dublin - Citywest</td>
+  <td>EUR 1595</td>
+  <td>2</td>
+  <td>1</td>
+  <td>Not listed</td>
+  <td>23/06/2026</td>
+  <td>30/06/2026</td>
+  <td class="table-links"><a class="source-link" href="https://affordablehomes.ie/rent/carrigmorewoods/" target="_blank" rel="noopener noreferrer">affordablehomes</a></td>
+  <td class="table-report">
+    <a class="scheme-report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Carrigmore%20Woods%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//mateussibila.github.io/cost-rental-alerts/%0A">Report</a>
+  </td>
+</tr>
+<tr class="scheme-row" data-search="kilcarbery grange dublin - d22 clondalkin kilcarbery grange, clondalkin, dublin 22, co. dublin, ireland open 1264 2 2 23/06/2026 30/06/2026 affordablehomes">
+  <td class="table-scheme"><strong>Kilcarbery Grange</strong><span class="table-scheme__address">Kilcarbery Grange, Clondalkin, Dublin 22, Co. Dublin, Ireland</span></td>
+  <td>Dublin - D22 Clondalkin</td>
+  <td>EUR 1264</td>
+  <td>2</td>
+  <td>2</td>
+  <td>Not listed</td>
+  <td>23/06/2026</td>
+  <td>30/06/2026</td>
+  <td class="table-links"><a class="source-link" href="https://affordablehomes.ie/rent/kilcarberygrange2/" target="_blank" rel="noopener noreferrer">affordablehomes</a></td>
+  <td class="table-report">
+    <a class="scheme-report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Kilcarbery%20Grange%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//mateussibila.github.io/cost-rental-alerts/%0A">Report</a>
+  </td>
+</tr>
+<tr class="scheme-row" data-search="barnwell point, hansfield, dublin 15 dublin - d15 hansfield barnwell point, hansfield, dublin 15, ireland open 1225 2 1-2 01/07/2026 lda">
+  <td class="table-scheme"><strong>Barnwell Point, Hansfield, Dublin 15</strong><span class="table-scheme__address">Barnwell Point, Hansfield, Dublin 15, Ireland</span></td>
+  <td>Dublin - D15 Hansfield</td>
+  <td>EUR 1225</td>
+  <td>1-2</td>
+  <td>2</td>
+  <td>EUR 42000 - EUR 66000</td>
+  <td>Not listed</td>
+  <td>01/07/2026</td>
+  <td class="table-links"><a class="source-link" href="https://lda.ie/affordable-homes/lda-cost-rental/barnwell-point-hansfield-dublin-15-8" target="_blank" rel="noopener noreferrer">lda</a></td>
+  <td class="table-report">
+    <a class="scheme-report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Barnwell%20Point%2C%20Hansfield%2C%20Dublin%2015%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//mateussibila.github.io/cost-rental-alerts/%0A">Report</a>
+  </td>
+</tr>
+<tr class="scheme-row" data-search="the quarter, citywest, dublin 24 dublin - d24 citywest the quarter, citywest, dublin 24, ireland open 1580 1 2 01/07/2026 lda">
+  <td class="table-scheme"><strong>The Quarter, Citywest, Dublin 24</strong><span class="table-scheme__address">The Quarter, Citywest, Dublin 24, Ireland</span></td>
+  <td>Dublin - D24 Citywest</td>
+  <td>EUR 1580</td>
+  <td>2</td>
+  <td>1</td>
+  <td>EUR 54171 - EUR 66000</td>
+  <td>Not listed</td>
+  <td>01/07/2026</td>
+  <td class="table-links"><a class="source-link" href="https://lda.ie/affordable-homes/lda-cost-rental/the-quarter-citywest-dublin-24-7" target="_blank" rel="noopener noreferrer">lda</a></td>
+  <td class="table-report">
+    <a class="scheme-report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20The%20Quarter%2C%20Citywest%2C%20Dublin%2024%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//mateussibila.github.io/cost-rental-alerts/%0A">Report</a>
+  </td>
+</tr>
+<tr class="scheme-row" data-search="folkstown park dublin - balbriggan folkstown park, balbriggan, co. dublin, ireland open 1150 40 1-3 04/06/2026 tuath">
+  <td class="table-scheme"><strong>Folkstown Park</strong><span class="table-scheme__address">Folkstown Park, Balbriggan, Co. Dublin, Ireland</span></td>
+  <td>Dublin - Balbriggan</td>
+  <td>EUR 1150</td>
+  <td>1-3</td>
+  <td>40</td>
+  <td>Not listed</td>
+  <td>04/06/2026</td>
+  <td>Not listed</td>
+  <td class="table-links"><a class="source-link" href="https://tuathhousing.ie/properties/folkstown-park-2/" target="_blank" rel="noopener noreferrer">tuath</a></td>
+  <td class="table-report">
+    <a class="scheme-report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Folkstown%20Park%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//mateussibila.github.io/cost-rental-alerts/%0A">Report</a>
+  </td>
+</tr>
+    </tbody>
+  </table>
+</div>
+  </div>
 </section>
 
     <section class="scheme-section" id="opening-soon" data-section="opening-soon">
@@ -551,7 +739,10 @@
       <h2 class="section-title">🔵 Opening soon<span class="info-tip" tabindex="0" role="button" aria-label="Section information"><span class="info-tip__icon" aria-hidden="true">i</span><span class="info-tip__popup">Not yet open for applications. Sorted by opening date, soonest first. This app is in test phase. If you find inconsistencies, please use the Report button and we will work on fixing the problem.</span></span></h2>
     </div>
   </div>
-  <div class="scheme-grid">
+  <div class="scheme-grid scheme-grid--cards">
+    <p class="empty-state">No schemes are opening soon right now.</p>
+  </div>
+  <div class="scheme-table-wrap">
     <p class="empty-state">No schemes are opening soon right now.</p>
   </div>
 </section>
@@ -564,22 +755,24 @@
   <script>
     const searchInput = document.getElementById("scheme-search");
     const noResults = document.getElementById("no-results");
-    const cards = Array.from(document.querySelectorAll(".scheme-card"));
+    const searchableItems = Array.from(document.querySelectorAll(".scheme-card, .scheme-row"));
 
     function applySearch() {
       const query = searchInput.value.trim().toLowerCase();
       let visible = 0;
-      cards.forEach((card) => {
-        const matches = !query || card.dataset.search.includes(query);
-        card.hidden = !matches;
+      searchableItems.forEach((item) => {
+        const matches = !query || item.dataset.search.includes(query);
+        item.hidden = !matches;
         if (matches) visible += 1;
       });
 
       document.querySelectorAll(".scheme-section").forEach((section) => {
-        const sectionCards = Array.from(section.querySelectorAll(".scheme-card"));
-        const hasVisibleCards = sectionCards.some((card) => !card.hidden);
-        const hasRealCards = sectionCards.length > 0;
-        section.hidden = hasRealCards && !hasVisibleCards && query.length > 0;
+        const sectionItems = Array.from(
+          section.querySelectorAll(".scheme-card, .scheme-row")
+        );
+        const hasVisibleItems = sectionItems.some((item) => !item.hidden);
+        const hasRealItems = sectionItems.length > 0;
+        section.hidden = hasRealItems && !hasVisibleItems && query.length > 0;
       });
 
       noResults.classList.toggle("is-visible", visible === 0 && query.length > 0);

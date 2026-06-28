@@ -338,6 +338,61 @@ def render_scheme_card(scheme: Scheme, *, extra_badges: Iterable[str] = ()) -> s
 """.strip()
 
 
+def render_scheme_table_row(scheme: Scheme) -> str:
+    name_cell = f'<strong>{escape(scheme.name or "Unnamed scheme")}</strong>'
+    if scheme.address:
+        name_cell += f'<span class="table-scheme__address">{escape(scheme.address)}</span>'
+    return f"""
+<tr class="scheme-row" data-search="{escape(scheme.search_text, quote=True)}">
+  <td class="table-scheme">{name_cell}</td>
+  <td>{escape(scheme.location or "Not listed")}</td>
+  <td>{escape(money(scheme.price))}</td>
+  <td>{escape(scheme.beds or "TBC")}</td>
+  <td>{escape(scheme.quantity or "TBC")}</td>
+  <td>{escape(income_range(scheme))}</td>
+  <td>{escape(scheme.open_on or "Not listed")}</td>
+  <td>{escape(scheme.close_on or "Not listed")}</td>
+  <td class="table-links">{render_source_links(scheme)}</td>
+  <td class="table-report">
+    <a class="scheme-report" href="{escape(report_issue_href(scheme_name=scheme.name), quote=True)}">Report</a>
+  </td>
+</tr>
+""".strip()
+
+
+def render_scheme_table(
+    schemes: list[Scheme],
+    *,
+    empty_message: str,
+) -> str:
+    if not schemes:
+        return f'<p class="empty-state">{escape(empty_message)}</p>'
+    rows = "\n".join(render_scheme_table_row(scheme) for scheme in schemes)
+    return f"""
+<div class="scheme-table-panel">
+  <table class="scheme-table">
+    <thead>
+      <tr>
+        <th scope="col">Scheme</th>
+        <th scope="col">📍 Location</th>
+        <th scope="col">💰 Price</th>
+        <th scope="col">🛏️ Beds</th>
+        <th scope="col">🏠 Homes</th>
+        <th scope="col">💶 Income</th>
+        <th scope="col">📅 Opens</th>
+        <th scope="col">⏰ Closes</th>
+        <th scope="col">Links</th>
+        <th scope="col"><span class="sr-only">Report</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      {rows}
+    </tbody>
+  </table>
+</div>
+""".strip()
+
+
 def render_info_tip(text: str) -> str:
     return (
         '<span class="info-tip" tabindex="0" role="button" aria-label="Section information">'
@@ -359,7 +414,8 @@ def render_section(
     cards = "\n".join(
         render_scheme_card(scheme, extra_badges=extra_badges) for scheme in schemes
     )
-    if not cards:
+    table = render_scheme_table(schemes, empty_message=empty_message)
+    if not schemes:
         cards = f'<p class="empty-state">{escape(empty_message)}</p>'
     return f"""
 <section class="scheme-section" id="{escape(section_id, quote=True)}" data-section="{escape(section_id, quote=True)}">
@@ -369,8 +425,11 @@ def render_section(
       <h2 class="section-title">{escape(title)}{render_info_tip(info_tip)}</h2>
     </div>
   </div>
-  <div class="scheme-grid">
+  <div class="scheme-grid scheme-grid--cards">
     {cards}
+  </div>
+  <div class="scheme-table-wrap">
+    {table}
   </div>
 </section>
 """.strip()
@@ -619,6 +678,102 @@ def render_html(
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       gap: 16px;
     }}
+    .scheme-table-wrap {{
+      display: none;
+    }}
+    .scheme-table-panel {{
+      overflow-x: auto;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }}
+    .scheme-table {{
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }}
+    .scheme-table thead {{
+      background: #f8fafc;
+      border-bottom: 1px solid var(--line);
+    }}
+    .scheme-table th {{
+      padding: 14px 12px;
+      text-align: left;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }}
+    .scheme-table td {{
+      padding: 14px 12px;
+      border-top: 1px solid #eef2f7;
+      vertical-align: top;
+    }}
+    .scheme-table th:nth-child(3),
+    .scheme-table th:nth-child(4),
+    .scheme-table th:nth-child(5),
+    .scheme-table th:nth-child(6),
+    .scheme-table th:nth-child(7),
+    .scheme-table th:nth-child(8),
+    .scheme-table td:nth-child(3),
+    .scheme-table td:nth-child(4),
+    .scheme-table td:nth-child(5),
+    .scheme-table td:nth-child(6),
+    .scheme-table td:nth-child(7),
+    .scheme-table td:nth-child(8) {{
+      text-align: center;
+    }}
+    .scheme-table tbody tr:hover {{
+      background: #fafcff;
+    }}
+    .scheme-row[hidden] {{ display: none; }}
+    .table-scheme {{
+      min-width: 180px;
+    }}
+    .table-scheme strong {{
+      display: block;
+      font-size: 0.98rem;
+      line-height: 1.25;
+    }}
+    .table-scheme__address {{
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.35;
+      max-width: 240px;
+    }}
+    .table-links .source-link {{
+      min-height: 32px;
+      padding: 0 10px;
+      font-size: 0.82rem;
+      border-radius: 10px;
+    }}
+    .table-report {{
+      white-space: nowrap;
+    }}
+    .sr-only {{
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }}
+    @media (min-width: 960px) {{
+      .scheme-grid--cards {{
+        display: none;
+      }}
+      .scheme-table-wrap {{
+        display: block;
+      }}
+    }}
     .scheme-card {{
       display: flex;
       min-height: 100%;
@@ -863,22 +1018,24 @@ def render_html(
   <script>
     const searchInput = document.getElementById("scheme-search");
     const noResults = document.getElementById("no-results");
-    const cards = Array.from(document.querySelectorAll(".scheme-card"));
+    const searchableItems = Array.from(document.querySelectorAll(".scheme-card, .scheme-row"));
 
     function applySearch() {{
       const query = searchInput.value.trim().toLowerCase();
       let visible = 0;
-      cards.forEach((card) => {{
-        const matches = !query || card.dataset.search.includes(query);
-        card.hidden = !matches;
+      searchableItems.forEach((item) => {{
+        const matches = !query || item.dataset.search.includes(query);
+        item.hidden = !matches;
         if (matches) visible += 1;
       }});
 
       document.querySelectorAll(".scheme-section").forEach((section) => {{
-        const sectionCards = Array.from(section.querySelectorAll(".scheme-card"));
-        const hasVisibleCards = sectionCards.some((card) => !card.hidden);
-        const hasRealCards = sectionCards.length > 0;
-        section.hidden = hasRealCards && !hasVisibleCards && query.length > 0;
+        const sectionItems = Array.from(
+          section.querySelectorAll(".scheme-card, .scheme-row")
+        );
+        const hasVisibleItems = sectionItems.some((item) => !item.hidden);
+        const hasRealItems = sectionItems.length > 0;
+        section.hidden = hasRealItems && !hasVisibleItems && query.length > 0;
       }});
 
       noResults.classList.toggle("is-visible", visible === 0 && query.length > 0);
