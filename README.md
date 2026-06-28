@@ -51,7 +51,7 @@ Runs at **07:00 UTC** daily. Manual run: **Actions → Daily Cost Rental Scrape 
 
 The dashboard is generated from `data/listings-export.csv` and published by
 GitHub Actions after each daily scrape. It is designed for private GitHub Pages
-access and includes Apply now, Opening soon, and Closing soon sections.
+access and includes Apply now and Opening soon sections.
 
 ## Structure
 

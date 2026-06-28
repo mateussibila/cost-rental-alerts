@@ -7,7 +7,7 @@ import csv
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from html import escape
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -15,7 +15,6 @@ from zoneinfo import ZoneInfo
 from cost_rental_alerts.paths import DATA_DIR, REPO_ROOT
 
 TZ = ZoneInfo("Europe/Dublin")
-CLOSING_SOON_DAYS = 14
 
 CSV_PATH = DATA_DIR / "listings-export.csv"
 SITE_DIR = REPO_ROOT / "site"
@@ -164,26 +163,6 @@ def opening_soon_schemes(schemes: Iterable[Scheme]) -> list[Scheme]:
     )
 
 
-def closing_soon_schemes(
-    schemes: Iterable[Scheme],
-    *,
-    today: date | None = None,
-    days: int = CLOSING_SOON_DAYS,
-) -> list[Scheme]:
-    ref = today or datetime.now(TZ).date()
-    soon_end = ref + timedelta(days=days)
-    return sorted(
-        [
-            scheme
-            for scheme in schemes
-            if normalize_key(scheme.status) == "open"
-            and (close_date := parse_csv_date(scheme.close_on)) is not None
-            and ref <= close_date <= soon_end
-        ],
-        key=lambda scheme: (date_sort_value(scheme.close_on), normalize_key(scheme.name)),
-    )
-
-
 def fmt_count(count: int, singular: str, plural: str | None = None) -> str:
     return f"{count} {singular if count == 1 else (plural or singular + 's')}"
 
@@ -298,13 +277,10 @@ def render_html(
     schemes: list[Scheme],
     *,
     generated_at: datetime | None = None,
-    today: date | None = None,
 ) -> str:
     generated = generated_at or datetime.now(TZ)
-    ref = today or generated.date()
     apply_now = apply_now_schemes(schemes)
     opening_soon = opening_soon_schemes(schemes)
-    closing_soon = closing_soon_schemes(schemes, today=ref)
     generated_label = generated.strftime("%d %b %Y %H:%M %Z")
 
     return f"""<!doctype html>
@@ -373,7 +349,7 @@ def render_html(
     }}
     .summary {{
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 16px;
       margin: 30px 0;
     }}
@@ -523,7 +499,6 @@ def render_html(
     }}
     .badge--open {{ background: #d3f9d8; color: var(--green); }}
     .badge--opening-soon {{ background: #fff3bf; color: var(--amber); }}
-    .badge--closing-soon {{ background: #ffe3e3; color: var(--red); }}
     .details {{
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -629,7 +604,7 @@ def render_html(
     <header class="hero">
       <div>
         <h1>Cost rental schemes</h1>
-        <p>Private dashboard for active cost-rental opportunities in Ireland. Use the sections below to see schemes you can apply for now, schemes opening soon, and open schemes whose application windows are closing soon.</p>
+        <p>Private dashboard for active cost-rental opportunities in Ireland. Use the sections below to see schemes you can apply for now and schemes opening soon.</p>
       </div>
       <div class="updated">Updated {escape(generated_label)}</div>
     </header>
@@ -637,7 +612,6 @@ def render_html(
     <section class="summary" aria-label="Scheme summary">
       <div class="summary-card"><span>Apply now</span><strong>{len(apply_now)}</strong></div>
       <div class="summary-card"><span>Opening soon</span><strong>{len(opening_soon)}</strong></div>
-      <div class="summary-card"><span>Closing soon</span><strong>{len(closing_soon)}</strong></div>
     </section>
 
     <nav class="toolbar" aria-label="Dashboard tools">
@@ -645,7 +619,6 @@ def render_html(
       <div class="quick-links">
         <a href="#apply-now">Apply now</a>
         <a href="#opening-soon">Opening soon</a>
-        <a href="#closing-soon">Closing soon</a>
       </div>
     </nav>
 
@@ -665,15 +638,6 @@ def render_html(
         "Schemes marked by the source data as opening soon.",
         opening_soon,
         empty_message="No schemes are marked as opening soon right now.",
-    )}
-
-    {render_section(
-        "closing-soon",
-        "Closing soon",
-        f"Open schemes with an application close date in the next {CLOSING_SOON_DAYS} days.",
-        closing_soon,
-        empty_message="No open schemes are closing soon.",
-        extra_badges=("closing soon",),
     )}
 
     <footer>

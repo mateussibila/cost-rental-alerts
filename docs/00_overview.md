@@ -15,7 +15,7 @@ Daily **cost rental** alerts for Ireland. The system scrapes three sources, stor
 | Database | `data/listings.db` (~200 schemes, `category = rent`) |
 | CSV (all) | `data/listings-export.csv` |
 | CSV (open only) | `data/listings-open.csv` |
-| Private dashboard | GitHub Pages — Apply now, Opening soon, Closing soon |
+| Private dashboard | GitHub Pages — Apply now, Opening soon |
 | Alerts | WhatsApp + email via `notify.py` |
 | Automation | GitHub Actions — 07:00 UTC daily |
 
@@ -34,9 +34,9 @@ Daily **cost rental** alerts for Ireland. The system scrapes three sources, stor
 ## Alert behaviour
 
 - **First run with send:** bootstrap message — database created, updates only from tomorrow
-- **Following days:** daily digest — new applications, closing soon, and opening soon
-- **No new applications:** message says `NO NEW APPLICATIONS` and still repeats any closing/opening soon sections
-- **Sorting:** New Applications and Closing Soon → closes soonest first; Opening Soon → opens soonest first
+- **Following days:** daily digest — apply now and opening soon
+- **Apply now:** all open schemes; 🔥 marks first-time appearances
+- **Sorting:** Apply now → new today first, then closes soonest; Opening soon → opens soonest first
 
 ## Links
 

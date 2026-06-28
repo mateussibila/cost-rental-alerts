@@ -1,10 +1,8 @@
 import unittest
-from datetime import date
 
 from cost_rental_alerts.export_site import (
     apply_now_schemes,
     build_schemes,
-    closing_soon_schemes,
     opening_soon_schemes,
 )
 
@@ -58,10 +56,10 @@ class ExportSiteTests(unittest.TestCase):
             ],
         )
 
-    def test_sections_split_apply_opening_and_closing_soon(self):
+    def test_sections_split_apply_and_opening_soon(self):
         rows = [
             {
-                "name": "Closing Soon",
+                "name": "Apply Now",
                 "location": "Dublin",
                 "address": "",
                 "price": "",
@@ -74,7 +72,7 @@ class ExportSiteTests(unittest.TestCase):
                 "open_on": "10/06/2026",
                 "close_on": "20/06/2026",
                 "source": "lda",
-                "link": "https://example.test/closing",
+                "link": "https://example.test/apply",
             },
             {
                 "name": "Opening Soon",
@@ -112,12 +110,8 @@ class ExportSiteTests(unittest.TestCase):
 
         schemes = build_schemes(rows)
 
-        self.assertEqual([scheme.name for scheme in apply_now_schemes(schemes)], ["Closing Soon"])
+        self.assertEqual([scheme.name for scheme in apply_now_schemes(schemes)], ["Apply Now"])
         self.assertEqual([scheme.name for scheme in opening_soon_schemes(schemes)], ["Opening Soon"])
-        self.assertEqual(
-            [scheme.name for scheme in closing_soon_schemes(schemes, today=date(2026, 6, 13))],
-            ["Closing Soon"],
-        )
 
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ class NewsItem:
     url: str
     status: str
     price_from: float | None
-    notification_type: str  # new_open | opened_today | opening_soon | closing_soon
+    notification_type: str  # new_open | opened_today | apply_now | opening_soon
     bedrooms: str | None = None
     applications_close_at: str | None = None
     applications_open_at: str | None = None
@@ -106,9 +106,16 @@ def find_news(conn: sqlite3.Connection, opening_soon_days: int = 14) -> List[New
     return items
 
 
-def find_closing_soon(conn: sqlite3.Connection, closing_soon_days: int = 14) -> List[NewsItem]:
-    today = date.fromisoformat(today_iso())
-    soon_end = today + timedelta(days=closing_soon_days)
+def _is_new_application_today(row: sqlite3.Row) -> bool:
+    if row["status"] != "open":
+        return False
+    first_seen_today = _is_today(row["first_seen_at"])
+    status_changed_today = _is_today(row["status_changed_at"])
+    return first_seen_today or (status_changed_today and not first_seen_today)
+
+
+def find_apply_now(conn: sqlite3.Connection) -> List[NewsItem]:
+    """All open listings for the daily Apply now digest."""
     items: List[NewsItem] = []
 
     rows = conn.execute(
@@ -116,15 +123,22 @@ def find_closing_soon(conn: sqlite3.Connection, closing_soon_days: int = 14) -> 
         SELECT * FROM listings
         WHERE category = 'rent'
           AND status = 'open'
-          AND applications_close_at IS NOT NULL
         ORDER BY applications_close_at, title
         """
     ).fetchall()
 
     for row in rows:
-        close_at = _parse_date(row["applications_close_at"])
-        if close_at and today <= close_at <= soon_end:
-            items.append(_news_item_from_row(row, "closing_soon"))
+        if _is_new_application_today(row):
+            first_seen_today = _is_today(row["first_seen_at"])
+            status_changed_today = _is_today(row["status_changed_at"])
+            ntype = (
+                "opened_today"
+                if status_changed_today and not first_seen_today
+                else "new_open"
+            )
+        else:
+            ntype = "apply_now"
+        items.append(_news_item_from_row(row, ntype))
 
     return items
 

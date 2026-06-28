@@ -15,20 +15,15 @@ from cost_rental_alerts.locations import format_city_neighborhood
 
 TZ = ZoneInfo("Europe/Dublin")
 WHATSAPP_CHUNK_CHARS = int(os.environ.get("WHATSAPP_CHUNK_CHARS", "650"))
+DEFAULT_SCHEME_HUB_URL = "https://mateussibila.github.io/cost-rental-alerts/"
 
 
 def _today() -> date:
     return datetime.now(TZ).date()
 
 
-def _format_price(price: float | None, prefix: str = "from") -> str:
-    if price is None:
-        return ""
-    if price == int(price):
-        amount = f"€{int(price):,}/mo"
-    else:
-        amount = f"€{price:,.2f}/mo"
-    return f"{prefix} {amount}" if prefix else amount
+def scheme_hub_url() -> str:
+    return os.environ.get("SCHEME_HUB_URL", DEFAULT_SCHEME_HUB_URL).strip() or DEFAULT_SCHEME_HUB_URL
 
 
 def _parse_date(value: str | None) -> date | None:
@@ -40,64 +35,40 @@ def _parse_date(value: str | None) -> date | None:
         return None
 
 
-def _format_open_date_short(value: str | None) -> str:
+def _format_day_month(value: str | None) -> str | None:
     parsed = _parse_date(value)
     if not parsed:
-        return ""
-    return parsed.strftime("%d/%m/%y")
-
-
-def _format_day_month(value: str | None) -> str:
-    parsed = _parse_date(value)
-    if not parsed:
-        return "date TBC"
+        return None
     return parsed.strftime("%d/%m")
 
 
-def _closes_line(close_at: str | None) -> str:
-    close_date = _parse_date(close_at)
-    if not close_date:
-        return "Closes in: not informed"
-    delta = (close_date - _today()).days
-    if delta < 0:
-        return "Closes in: not informed"
-    if delta == 0:
-        return "Closes today"
-    if delta == 1:
-        return "Closes in 1 day"
-    return f"Closes in {delta} days"
+def _format_day_month_year(value: str | None) -> str | None:
+    parsed = _parse_date(value)
+    if not parsed:
+        return None
+    return parsed.strftime("%d/%m/%Y")
 
 
-def _format_details_line(bedrooms: str | None, price: float | None) -> str:
-    parts = []
-    if bedrooms:
-        parts.append(f"🛏️ {bedrooms}")
-    price_text = _format_price(price)
-    if price_text:
-        parts.append(f"💰 {price_text}")
-    return " | ".join(parts)
+def _compact_price(price: float | None) -> str:
+    if price is None:
+        return ""
+    if price == int(price):
+        return f"€{int(price):,}"
+    return f"€{price:,.2f}"
 
 
-def _format_listing_block(
-    index: int,
-    title: str,
-    location: str,
-    url: str,
-    bedrooms: str | None,
-    price: float | None,
-    *,
-    extra_line: str | None = None,
-) -> List[str]:
-    loc = location or title
-    lines = [f"{index}. {title} — {loc}"]
-    details = _format_details_line(bedrooms, price)
-    if details:
-        lines.append(f"   {details}")
-    if extra_line:
-        lines.append(f"   {extra_line}")
-    lines.append(f"   {url}")
-    lines.append("")
-    return lines
+def _email_price(price: float | None) -> str:
+    if price is None:
+        return ""
+    if price == int(price):
+        return f"from €{int(price):,}/mo"
+    return f"from €{price:,.2f}/mo"
+
+
+def _compact_bedrooms(bedrooms: str | None) -> str:
+    if not bedrooms:
+        return ""
+    return bedrooms.removesuffix(" bed").strip()
 
 
 SOURCE_PRIORITY = {"affordablehomes": 0, "lda": 1, "tuath": 2}
@@ -114,30 +85,6 @@ def _pick_better_item(current: NewsItem, candidate: NewsItem) -> NewsItem:
     return current
 
 
-def _sort_by_close_date(items: List[NewsItem]) -> List[NewsItem]:
-    """Soonest closing first; listings without a close date last."""
-
-    def key(item: NewsItem) -> tuple[int, date]:
-        close_date = _parse_date(item.applications_close_at)
-        if close_date is None:
-            return (1, date.max)
-        return (0, close_date)
-
-    return sorted(items, key=key)
-
-
-def _sort_by_open_date(items: List[NewsItem]) -> List[NewsItem]:
-    """Soonest opening first; listings without an open date last."""
-
-    def key(item: NewsItem) -> tuple[int, date]:
-        open_date = _parse_date(item.applications_open_at)
-        if open_date is None:
-            return (1, date.max)
-        return (0, open_date)
-
-    return sorted(items, key=key)
-
-
 def _dedupe_news(items: List[NewsItem]) -> List[NewsItem]:
     """Merge only the same scheme phase (name + open date), not different phases."""
     best: dict[str, NewsItem] = {}
@@ -151,198 +98,160 @@ def _dedupe_news(items: List[NewsItem]) -> List[NewsItem]:
     return list(best.values())
 
 
-def _identity_keys(item: NewsItem) -> set[str]:
-    return {key for key in (item.listing_id, item.scheme_key) if key}
-
-
-def _exclude_items(
-    items: List[NewsItem],
-    excluded: List[NewsItem],
-) -> List[NewsItem]:
-    excluded_keys: set[str] = set()
-    for item in excluded:
-        excluded_keys.update(_identity_keys(item))
-    return [item for item in items if _identity_keys(item).isdisjoint(excluded_keys)]
-
-
-def _message_groups(
-    news: List[NewsItem],
-    closing_soon: List[NewsItem] | None = None,
-    opening_soon: List[NewsItem] | None = None,
-) -> tuple[List[NewsItem], List[NewsItem], List[NewsItem]]:
-    news = _dedupe_news(news)
-    opened = [n for n in news if n.notification_type in ("new_open", "opened_today")]
-    soon_source = (
-        opening_soon
-        if opening_soon is not None
-        else [n for n in news if n.notification_type == "opening_soon"]
-    )
-    soon = _exclude_items(_dedupe_news(soon_source), opened)
-    closing = _exclude_items(_dedupe_news(closing_soon or []), opened)
-    return opened, closing, soon
-
-
-def _append_listing_section(
-    lines: List[str],
-    heading: str,
-    items: List[NewsItem],
-    *,
-    sort_by: str,
-) -> None:
-    if sort_by == "close":
-        sorted_items = _sort_by_close_date(items)
-    elif sort_by == "open":
-        sorted_items = _sort_by_open_date(items)
-    else:
-        sorted_items = items
-
-    lines.append(f"{heading} ({len(sorted_items)}):")
-    lines.append("")
-    for i, item in enumerate(sorted_items, 1):
-        if sort_by == "open":
-            open_date = _format_open_date_short(item.applications_open_at)
-            extra = f"Opens: {open_date}" if open_date else None
-        else:
-            extra = _closes_line(item.applications_close_at)
-
-        lines.extend(
-            _format_listing_block(
-                i,
-                item.title,
-                item.location,
-                item.url,
-                item.bedrooms,
-                item.price_from,
-                extra_line=extra,
-            )
-        )
-
-
-def format_message(
-    news: List[NewsItem],
-    total_scraped: int,
-    *,
-    closing_soon: List[NewsItem] | None = None,
-    opening_soon: List[NewsItem] | None = None,
-) -> str:
-    today = datetime.now(TZ).strftime("%d/%m/%Y")
-    lines = [f"🏠 Cost Rental Alert — {today}", ""]
-    opened, closing, soon = _message_groups(news, closing_soon, opening_soon)
-
-    if opened:
-        _append_listing_section(
-            lines,
-            "📢 NEW APPLICATIONS",
-            opened,
-            sort_by="close",
-        )
-    else:
-        lines.append("🆕 NO NEW APPLICATIONS")
-        lines.append("")
-
-    if closing:
-        _append_listing_section(
-            lines,
-            "⏳ CLOSING SOON",
-            closing,
-            sort_by="close",
-        )
-    else:
-        lines.append("⏳ CLOSING SOON: none")
-        lines.append("")
-
-    if soon:
-        _append_listing_section(
-            lines,
-            "📅 OPENING SOON",
-            soon,
-            sort_by="open",
-        )
-    else:
-        lines.append("📅 OPENING SOON: none")
-        lines.append("")
-
-    lines.append(f"({total_scraped} schemes monitored)")
-    return "\n".join(lines).strip()
+def _is_new_today(item: NewsItem) -> bool:
+    return item.notification_type in ("new_open", "opened_today")
 
 
 def _compact_city(item: NewsItem) -> str:
+    location = (item.location or "").strip()
+    if " - " in location:
+        return location.split(" - ", 1)[0].strip()
     formatted = format_city_neighborhood(item.title, item.location)
     return formatted.split(" - ", 1)[0]
 
 
-def _compact_item_line(index: int, item: NewsItem, date_value: str | None) -> List[str]:
+def _scheme_headline(item: NewsItem) -> str:
+    return f"{_compact_city(item)} — {item.title}"
+
+
+def _sort_apply_now(items: List[NewsItem]) -> List[NewsItem]:
+    def key(item: NewsItem) -> tuple[int, tuple[int, date], str]:
+        close_date = _parse_date(item.applications_close_at)
+        return (
+            0 if _is_new_today(item) else 1,
+            (1, date.max) if close_date is None else (0, close_date),
+            item.title.casefold(),
+        )
+
+    return sorted(items, key=key)
+
+
+def _sort_by_open_date(items: List[NewsItem]) -> List[NewsItem]:
+    def key(item: NewsItem) -> tuple[int, date, str]:
+        open_date = _parse_date(item.applications_open_at)
+        if open_date is None:
+            return (1, date.max, item.title.casefold())
+        return (0, open_date, item.title.casefold())
+
+    return sorted(items, key=key)
+
+
+def _message_header(*, include_year: bool) -> List[str]:
+    today = datetime.now(TZ).strftime("%d/%m/%Y" if include_year else "%d/%m")
     return [
-        f"{index}. {_format_day_month(date_value)} - {_compact_city(item)}, {item.title}",
-        item.url,
+        f"🏠 Cost Rental — {today}",
+        f"Scheme Hub: {scheme_hub_url()}",
+        "",
     ]
 
 
-def _append_compact_section(
-    lines: List[str],
-    heading: str,
-    items: List[NewsItem],
-    *,
-    date_field: str,
-    sort_by: str,
-) -> None:
-    if sort_by == "close":
-        sorted_items = _sort_by_close_date(items)
-    elif sort_by == "open":
-        sorted_items = _sort_by_open_date(items)
-    else:
-        sorted_items = items
+def _whatsapp_item_lines(item: NewsItem, *, date_label: str, date_value: str | None) -> List[str]:
+    prefix = "🔥 " if _is_new_today(item) else ""
+    lines = [f"{prefix}{_scheme_headline(item)}"]
+    details = []
+    beds = _compact_bedrooms(item.bedrooms)
+    if beds:
+        details.append(f"🛏️ {beds}")
+    price = _compact_price(item.price_from)
+    if price:
+        details.append(f"💰 {price}")
+    if details:
+        lines.append(" | ".join(details))
+    day = _format_day_month(date_value)
+    if day:
+        lines.append(f"{date_label} {day}")
+    return lines
 
-    lines.append(f"{heading}:")
-    if not sorted_items:
-        lines.append("none")
-        lines.append("")
-        return
 
-    for i, item in enumerate(sorted_items, 1):
-        date_value = (
-            item.applications_open_at
-            if date_field == "open"
-            else item.applications_close_at
-        )
-        lines.extend(_compact_item_line(i, item, date_value))
+def _email_item_lines(index: int, item: NewsItem, *, date_label: str, date_value: str | None) -> List[str]:
+    prefix = "🔥 " if _is_new_today(item) else ""
+    loc = item.location or item.title
+    lines = [f"{index}. {prefix}{item.title} — {loc}"]
+    details = []
+    if item.bedrooms:
+        details.append(f"🛏️ {item.bedrooms}")
+    price = _email_price(item.price_from)
+    if price:
+        details.append(f"💰 {price}")
+    if details:
+        lines.append(f"   {' | '.join(details)}")
+    day = _format_day_month_year(date_value)
+    if day:
+        lines.append(f"   {date_label}: {day}")
+    lines.append(f"   {item.url}")
     lines.append("")
+    return lines
 
 
 def format_whatsapp_message(
-    news: List[NewsItem],
-    total_scraped: int,
-    *,
-    closing_soon: List[NewsItem] | None = None,
-    opening_soon: List[NewsItem] | None = None,
+    apply_now: List[NewsItem],
+    opening_soon: List[NewsItem],
 ) -> str:
-    today = datetime.now(TZ).strftime("%d/%m")
-    opened, closing, soon = _message_groups(news, closing_soon, opening_soon)
-    lines = [f"🏠 Cost Rental — {today}", ""]
+    apply_items = _sort_apply_now(_dedupe_news(apply_now))
+    soon_items = _sort_by_open_date(_dedupe_news(opening_soon))
+    lines = _message_header(include_year=False)
 
-    _append_compact_section(
-        lines,
-        "🆕 New",
-        opened,
-        date_field="close",
-        sort_by="close",
-    )
-    _append_compact_section(
-        lines,
-        "⏳ Closing soon",
-        closing,
-        date_field="close",
-        sort_by="close",
-    )
-    _append_compact_section(
-        lines,
-        "📅 Opening soon",
-        soon,
-        date_field="open",
-        sort_by="open",
-    )
+    if apply_items:
+        lines.append("🟢 Apply now:")
+        for item in apply_items:
+            lines.extend(
+                _whatsapp_item_lines(
+                    item,
+                    date_label="closes",
+                    date_value=item.applications_close_at,
+                )
+            )
+            lines.append("")
 
-    lines.append(f"({total_scraped} monitored)")
+    if soon_items:
+        lines.append("🔵 Opening soon:")
+        for item in soon_items:
+            lines.extend(
+                _whatsapp_item_lines(
+                    item,
+                    date_label="opens",
+                    date_value=item.applications_open_at,
+                )
+            )
+            lines.append("")
+
+    return "\n".join(lines).strip()
+
+
+def format_message(
+    apply_now: List[NewsItem],
+    opening_soon: List[NewsItem],
+) -> str:
+    apply_items = _sort_apply_now(_dedupe_news(apply_now))
+    soon_items = _sort_by_open_date(_dedupe_news(opening_soon))
+    lines = _message_header(include_year=True)
+
+    if apply_items:
+        lines.append(f"🟢 Apply now ({len(apply_items)}):")
+        lines.append("")
+        for index, item in enumerate(apply_items, 1):
+            lines.extend(
+                _email_item_lines(
+                    index,
+                    item,
+                    date_label="Closes",
+                    date_value=item.applications_close_at,
+                )
+            )
+
+    if soon_items:
+        lines.append(f"🔵 Opening soon ({len(soon_items)}):")
+        lines.append("")
+        for index, item in enumerate(soon_items, 1):
+            lines.extend(
+                _email_item_lines(
+                    index,
+                    item,
+                    date_label="Opens",
+                    date_value=item.applications_open_at,
+                )
+            )
+
     return "\n".join(lines).strip()
 
 
@@ -384,17 +293,20 @@ def format_test_message(
     if samples:
         lines.extend(["", f"📢 Sample open listings ({len(samples)}):"])
         for i, item in enumerate(samples, 1):
-            lines.extend(
-                _format_listing_block(
-                    i,
-                    item.title,
-                    item.location,
-                    item.url,
-                    item.bedrooms,
-                    item.price_from,
-                    extra_line=_closes_line(item.applications_close_at),
-                )
-            )
+            price = _email_price(item.price_from)
+            close = _format_day_month_year(item.applications_close_at)
+            lines.append(f"{i}. {item.title} — {item.location or item.title}")
+            if item.bedrooms or price:
+                parts = []
+                if item.bedrooms:
+                    parts.append(f"🛏️ {item.bedrooms}")
+                if price:
+                    parts.append(f"💰 {price}")
+                lines.append(f"   {' | '.join(parts)}")
+            if close:
+                lines.append(f"   Closes: {close}")
+            lines.append(f"   {item.url}")
+            lines.append("")
 
     lines.extend(
         [
@@ -506,7 +418,6 @@ def _split_whatsapp_message(
     if not separator:
         return _split_long_text(message, max_chars)
 
-    # Reserve room for the repeated header and "(1/2)" marker in each part.
     body_limit = max(200, max_chars - len(header) - 16)
     body_chunks = _split_blocks(body.split("\n\n"), body_limit)
     total = len(body_chunks)

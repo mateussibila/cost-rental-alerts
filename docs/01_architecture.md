@@ -47,7 +47,7 @@ cost-rental-alerts/
 | `scrapers/` | Fetch and parse listings from each source |
 | `schemes.py` | `scheme_key` identity; AH-first merge; cross-source date enrichment |
 | `db.py` | Schema, upsert, notification tracking, meta (`bootstrap_done`) |
-| `diff.py` | `find_news()` plus daily opening/closing soon digest lists |
+| `diff.py` | `find_news()` plus daily opening soon digest list |
 | `notify.py` | Format message, dedupe by scheme, sort, send WhatsApp/email |
 | `export_csv.py` | Export DB to CSV with derived `status` and formatted dates |
 

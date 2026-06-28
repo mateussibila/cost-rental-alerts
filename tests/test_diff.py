@@ -75,16 +75,33 @@ class DiffDigestTests(unittest.TestCase):
         self.assertEqual([], [item.listing_id for item in news])
         self.assertEqual(["opening-soon"], [item.listing_id for item in digest])
 
-    def test_closing_soon_digest_repeats_items_in_window(self):
+    def test_apply_now_includes_all_open_and_marks_new_today(self):
         self._insert_listing(
-            "closing-soon",
+            "new-today",
             status="open",
-            close_at="2026-06-11",
+            close_at="2026-06-17",
         )
+        self.conn.execute(
+            """
+            UPDATE listings
+            SET first_seen_at = ?, status_changed_at = ?
+            WHERE id = ?
+            """,
+            ("2026-06-10T08:00:00+01:00", "2026-06-10T08:00:00+01:00", "new-today"),
+        )
+        self._insert_listing(
+            "existing",
+            status="open",
+            close_at="2026-06-20",
+        )
+        self.conn.commit()
 
-        digest = diff.find_closing_soon(self.conn)
+        apply_now = diff.find_apply_now(self.conn)
 
-        self.assertEqual(["closing-soon"], [item.listing_id for item in digest])
+        self.assertEqual(
+            {item.listing_id: item.notification_type for item in apply_now},
+            {"new-today": "new_open", "existing": "apply_now"},
+        )
 
 
 if __name__ == "__main__":
