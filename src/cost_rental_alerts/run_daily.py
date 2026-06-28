@@ -13,6 +13,7 @@ from cost_rental_alerts.notify import (
     email_configured,
     format_message,
     format_test_message,
+    format_whatsapp_message,
     send_email,
     send_whatsapp,
 )
@@ -137,6 +138,7 @@ def main() -> int:
             f"✅ Database created with {len(listings)} schemes monitored.\n"
             f"From tomorrow you'll receive daily updates only."
         )
+        whatsapp_message = message
     else:
         message = format_message(
             news,
@@ -144,8 +146,14 @@ def main() -> int:
             closing_soon=closing_soon,
             opening_soon=opening_soon,
         )
+        whatsapp_message = format_whatsapp_message(
+            news,
+            total_scraped=len(listings),
+            closing_soon=closing_soon,
+            opening_soon=opening_soon,
+        )
 
-    sent_whatsapp = send_whatsapp(message, dry_run=args.dry_run)
+    sent_whatsapp = send_whatsapp(whatsapp_message, dry_run=args.dry_run)
     sent_email = send_email(message, dry_run=args.dry_run)
     sent = sent_whatsapp or sent_email
 

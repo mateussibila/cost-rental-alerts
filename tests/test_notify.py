@@ -11,13 +11,14 @@ def _item(
     *,
     notification_type: str,
     status: str,
+    location: str = "Dublin",
     open_at: str | None = None,
     close_at: str | None = None,
 ) -> NewsItem:
     return NewsItem(
         listing_id=listing_id,
         title=title,
-        location="Dublin",
+        location=location,
         url=f"https://example.com/{listing_id}",
         status=status,
         price_from=1326,
@@ -109,6 +110,49 @@ class NotifyMessageTests(unittest.TestCase):
         self.assertIn("⏳ CLOSING SOON (1):", message)
         self.assertEqual(message.count("Lancaster Gate"), 1)
         self.assertIn("Folkstown Park", message)
+
+    def test_whatsapp_message_uses_compact_city_format(self):
+        message = notify.format_whatsapp_message(
+            [],
+            total_scraped=180,
+            closing_soon=[
+                _item(
+                    "carrigmore",
+                    "Carrigmore Woods",
+                    notification_type="closing_soon",
+                    status="open",
+                    location="Citywest, Co. Dublin",
+                    close_at="2026-06-30",
+                )
+            ],
+        )
+
+        self.assertIn("⏳ Closing soon:", message)
+        self.assertIn("1. 30/06 - Dublin, Carrigmore Woods", message)
+        self.assertIn("https://example.com/carrigmore", message)
+        self.assertNotIn("🛏️", message)
+        self.assertNotIn("💰", message)
+
+    def test_whatsapp_message_does_not_repeat_new_item_in_closing_soon(self):
+        item = _item(
+            "lancaster",
+            "Lancaster Gate",
+            notification_type="new_open",
+            status="open",
+            location="Cork City, Co. Cork",
+            close_at="2026-07-02",
+        )
+
+        message = notify.format_whatsapp_message(
+            [item],
+            total_scraped=180,
+            closing_soon=[item],
+        )
+
+        self.assertIn("🆕 New:", message)
+        self.assertIn("1. 02/07 - Cork, Lancaster Gate", message)
+        self.assertIn("⏳ Closing soon:\nnone", message)
+        self.assertEqual(message.count("Lancaster Gate"), 1)
 
     def test_short_whatsapp_message_is_not_split(self):
         message = "🏠 Cost Rental Alert — 27/06/2026\n\n🆕 NO NEW APPLICATIONS"
