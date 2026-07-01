@@ -540,9 +540,6 @@ def render_html(
     .summary-card--apply strong {{ color: var(--green); }}
     .summary-card--opening strong {{ color: var(--brand); }}
     .toolbar {{
-      position: sticky;
-      top: 0;
-      z-index: 2;
       margin: 26px 0;
       padding: 12px;
       display: grid;

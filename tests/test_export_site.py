@@ -308,6 +308,13 @@ class ExportSiteTests(unittest.TestCase):
         self.assertIn(".summary-card {\n        padding: 16px;", html)
         self.assertIn(".quick-links a.report-link {\n        grid-column: 1 / -1;", html)
 
+    def test_toolbar_is_not_sticky(self):
+        html = render_html([])
+        toolbar_css = html.split(".toolbar {", 1)[1].split("}", 1)[0]
+
+        self.assertNotIn("position: sticky", toolbar_css)
+        self.assertNotIn("top: 0", toolbar_css)
+
 
 if __name__ == "__main__":
     unittest.main()
