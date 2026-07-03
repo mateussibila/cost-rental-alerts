@@ -1,5 +1,7 @@
 name,location,address,price,quantity,beds,status,income_min,income_max,listed_at,open_on,close_on,source,link
+Barnoaks,Dublin - Citywest,"Barnoaks, Citywest, Co. Dublin, Ireland",1026,1,1,open,,,02/07/2026,02/07/2026,09/07/2026,affordablehomes,https://affordablehomes.ie/rent/barnoaks1/
 "Cooper Square, Seven Mills, Dublin 22 - Phase 4",Dublin - D22 Seven Mills,"Cooper Square, Seven Mills, Dublin 22 - Phase 4, Ireland",1500,2,2-3,open,51429,66000,,,08/07/2026,lda,https://lda.ie/affordable-homes/lda-cost-rental/cooper-square-seven-mills-dublin-22-phase-4
 Folkstown Park,Dublin - Balbriggan,"Folkstown Park, Balbriggan, Co. Dublin, Ireland",1150,40,1-3,open,,,,04/06/2026,,tuath,https://tuathhousing.ie/properties/folkstown-park-2/
 Mountneil,Waterford - Carrickperish,"Mountneil, Carrickperish, Co. Waterford, Ireland",1219,1,3,closed,,,,04/06/2026,11/06/2026,tuath,https://tuathhousing.ie/properties/mountneil/
+Swiftbanks,Dublin - Saggart,"Swiftbanks, Mill Road, Saggart, Co. Dublin, Ireland",1375,1,1,open,,,02/07/2026,02/07/2026,09/07/2026,affordablehomes,https://affordablehomes.ie/rent/swiftbanks1/
 Warrens Court,Cork,"Warrens Court, Barnahely, Ringaskiddy, Co. Cork, Ireland",1195,17,2-3,open,,,11/06/2026,29/06/2026,13/07/2026,affordablehomes,https://affordablehomes.ie/rent/warrenscourt/
