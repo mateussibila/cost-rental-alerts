@@ -67,12 +67,14 @@ jobs:
           file_pattern: data/listings.db data/listings-export.csv data/listings-open.csv site/index.html
 
       - name: Configure GitHub Pages
+        id: configure_pages
         continue-on-error: true
         uses: actions/configure-pages@v5
         with:
           enablement: true
 
       - name: Upload dashboard artifact
+        id: upload_pages
         continue-on-error: true
         uses: actions/upload-pages-artifact@v3
         with:
@@ -82,3 +84,49 @@ jobs:
         continue-on-error: true
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Notify Pages deploy failure on WhatsApp
+        if: ${{ always() && (steps.configure_pages.outcome == 'failure' || steps.upload_pages.outcome == 'failure' || steps.deployment.outcome == 'failure') }}
+        continue-on-error: true
+        env:
+          CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
+          CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          CONFIGURE_OUTCOME: ${{ steps.configure_pages.outcome }}
+          UPLOAD_OUTCOME: ${{ steps.upload_pages.outcome }}
+          DEPLOY_OUTCOME: ${{ steps.deployment.outcome }}
+        run: |
+          python - <<'PY'
+          import os
+          import urllib.parse
+          import urllib.request
+
+          phone = os.environ.get("CALLMEBOT_PHONE", "").strip()
+          apikey = os.environ.get("CALLMEBOT_APIKEY", "").strip()
+          if not phone or not apikey:
+              print("CallMeBot credentials missing; skipping Pages failure WhatsApp.")
+              raise SystemExit(0)
+
+          message = "\n".join(
+              [
+                  "⚠️ Hub Cost Rental: deploy falhou",
+                  "",
+                  "O alerta e os dados rodaram, mas a página pública pode estar desatualizada.",
+                  f"Configure: {os.environ.get('CONFIGURE_OUTCOME')}",
+                  f"Upload: {os.environ.get('UPLOAD_OUTCOME')}",
+                  f"Deploy: {os.environ.get('DEPLOY_OUTCOME')}",
+                  os.environ.get("RUN_URL", ""),
+              ]
+          )
+          params = urllib.parse.urlencode(
+              {
+                  "phone": phone,
+                  "text": message,
+                  "apikey": apikey,
+              }
+          )
+          url = f"https://api.callmebot.com/whatsapp.php?{params}"
+          with urllib.request.urlopen(url, timeout=30) as response:
+              response.read()
+          print("Pages failure WhatsApp sent.")
+          PY
