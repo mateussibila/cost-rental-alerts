@@ -118,6 +118,12 @@ class NotifyMessageTests(unittest.TestCase):
         self.assertIn("https://example.com/rath-rua", message)
         self.assertNotIn("🔵 Opening soon", message)
 
+    def test_email_subject_uses_cost_rental_alert_title(self):
+        subject = notify.email_subject(
+            "🏠 Cost Rental — 08/07/2026\n\nIreland Cost Rental Hub: https://example.com\n"
+        )
+        self.assertEqual(subject, "Cost Rental Alert — 08/07/2026")
+
     def test_empty_sections_are_omitted(self):
         message = notify.format_whatsapp_message([], [])
 

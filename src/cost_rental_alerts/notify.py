@@ -411,10 +411,17 @@ def send_ops_alert(message: str, *, dry_run: bool = False) -> bool:
 
 def email_subject(message: str) -> str:
     """Subject line for Mail app / Shortcuts (filter: 'Cost Rental Alert')."""
+    today = datetime.now(TZ).strftime("%d/%m/%Y")
     first_line = message.split("\n", 1)[0].strip()
+    if first_line.startswith("🧪"):
+        return first_line.removeprefix("🧪 ").strip()
     if first_line.startswith("🏠"):
-        return first_line.removeprefix("🏠 ").strip()
-    return f"Cost Rental Alert — {datetime.now(TZ).strftime('%d/%m/%Y')}"
+        remainder = first_line.removeprefix("🏠 ").strip()
+        if remainder.startswith("Cost Rental — "):
+            date_part = remainder.removeprefix("Cost Rental — ").strip()
+            return f"Cost Rental Alert — {date_part}"
+        return f"Cost Rental Alert — {today}"
+    return f"Cost Rental Alert — {today}"
 
 
 def send_email(message: str, dry_run: bool = False) -> bool:
