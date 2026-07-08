@@ -538,6 +538,16 @@ def render_about_modal(*, issue_href: str) -> str:
         <p data-i18n="about.test.body">{escape(TEST_PHASE_NOTE)}</p>
       </section>
       <section class="about-modal__section">
+        <h3 data-i18n="about.limits.title">Free service — some gaps</h3>
+        <p data-i18n="about.limits.body">
+          This hub is free to use. We read public portals automatically each morning,
+          not by hand. Some details — like exact rent, income limits, or dates — may be
+          missing when a portal does not show them clearly or changes layout. Always
+          confirm on the official scheme page before you apply. Use Report if you spot a
+          gap.
+        </p>
+      </section>
+      <section class="about-modal__section">
         <h3 data-i18n="about.help.title">Help improve this</h3>
         <ul class="about-modal__list">
           <li data-i18n="about.help.scheme">Wrong details on a scheme? Use <strong>Report</strong> on that scheme&apos;s card.</li>
@@ -634,7 +644,7 @@ def render_subscribe_modal() -> str:
     </div>
     <div class="subscribe-modal__lede">
       <p class="subscribe-modal__lede-line" data-i18n="subscribe.lede_line1">
-        Get daily alerts for schemes you can apply for now, plus those opening soon.
+        Get free daily alerts for schemes you can apply for now, plus those opening soon.
       </p>
       <p class="subscribe-modal__lede-line">
         <span data-i18n="subscribe.lede_line2">

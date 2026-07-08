@@ -121,8 +121,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "modal.close": {"en": "Close", "pt": "Fechar"},
     "subscribe.title": {"en": "Get cost rental alerts", "pt": "Receber alertas de cost rental"},
     "subscribe.lede_line1": {
-        "en": "Get daily alerts for schemes you can apply for now, plus those opening soon.",
-        "pt": "Alertas diários com esquemas para candidatar agora e os que abrem em breve.",
+        "en": "Get free daily alerts for schemes you can apply for now, plus those opening soon.",
+        "pt": "Alertas diários gratuitos com esquemas para candidatar agora e os que abrem em breve.",
     },
     "subscribe.lede_line2": {
         "en": "We check affordablehomes.ie, LDA, and Tuath Housing for you.",
@@ -202,6 +202,26 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "pt": (
             "Esta app está em fase de testes. Se encontrar inconsistências, use o "
             "botão Reportar e vamos corrigir o problema."
+        ),
+    },
+    "about.limits.title": {
+        "en": "Free service — some gaps",
+        "pt": "Serviço gratuito — lacunas possíveis",
+    },
+    "about.limits.body": {
+        "en": (
+            "This hub is free to use. We read public portals automatically each morning, "
+            "not by hand. Some details — like exact rent, income limits, or dates — may "
+            "be missing when a portal does not show them clearly or changes layout. "
+            "Always confirm on the official scheme page before you apply. Use Report if "
+            "you spot a gap."
+        ),
+        "pt": (
+            "Este hub é gratuito. Lemos os portais públicos automaticamente todas as "
+            "manhãs, não manualmente. Alguns detalhes — como renda exata, limites de "
+            "rendimento ou datas — podem faltar quando o portal não os mostra bem ou "
+            "muda o layout. Confirme sempre na página oficial do esquema antes de "
+            "candidatar-se. Use Reportar se encontrar uma lacuna."
         ),
     },
     "about.help.title": {"en": "Help improve this", "pt": "Ajude a melhorar"},

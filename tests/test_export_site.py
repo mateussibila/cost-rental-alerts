@@ -360,6 +360,8 @@ class ExportSiteTests(unittest.TestCase):
         self.assertIn("data-open-subscribe", html)
         self.assertIn(SUBSCRIBE_HERO_URL, html)
         self.assertIn("Help improve this", html)
+        self.assertIn("Free service — some gaps", html)
+        self.assertIn("Get free daily alerts for schemes", html)
         self.assertIn("lang-toggle", html)
         self.assertIn('data-lang="pt"', html)
         self.assertIn("LANGUAGE_STORAGE_KEY", html)
