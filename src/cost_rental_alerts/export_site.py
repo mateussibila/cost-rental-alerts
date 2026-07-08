@@ -29,6 +29,9 @@ INDEX_PATH = SITE_DIR / "index.html"
 HUB_LOGO_PATH = REPO_ROOT / "assets" / "cr-house-logo.png"
 HUB_LOGO_SITE_PATH = SITE_DIR / "assets" / "cr-house-logo.png"
 HUB_LOGO_URL = "assets/cr-house-logo.png"
+SUBSCRIBE_HERO_PATH = REPO_ROOT / "assets" / "email-modal-hero.jpg"
+SUBSCRIBE_HERO_SITE_PATH = SITE_DIR / "assets" / "email-modal-hero.jpg"
+SUBSCRIBE_HERO_URL = "assets/email-modal-hero.jpg"
 
 
 @dataclass
@@ -622,10 +625,10 @@ def render_subscribe_modal() -> str:
     <div class="subscribe-modal__hero">
       <img
         class="subscribe-modal__hero-image"
-        src="{escape(HUB_LOGO_URL, quote=True)}"
+        src="{escape(SUBSCRIBE_HERO_URL, quote=True)}"
         alt=""
-        width="640"
-        height="200"
+        width="930"
+        height="291"
         loading="lazy"
       >
     </div>
@@ -1414,8 +1417,8 @@ def render_html(
       display: block;
       width: 100%;
       height: 100%;
-      object-fit: contain;
-      padding: 10px 16px;
+      object-fit: cover;
+      object-position: center;
     }}
     .subscribe-modal__lede {{
       margin: 0 0 18px;
@@ -1998,6 +2001,9 @@ def export_site(
     if HUB_LOGO_PATH.exists():
         HUB_LOGO_SITE_PATH.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(HUB_LOGO_PATH, HUB_LOGO_SITE_PATH)
+    if SUBSCRIBE_HERO_PATH.exists():
+        SUBSCRIBE_HERO_SITE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(SUBSCRIBE_HERO_PATH, SUBSCRIBE_HERO_SITE_PATH)
     out_path.write_text(
         render_html(schemes, generated_at=generated_at),
         encoding="utf-8",

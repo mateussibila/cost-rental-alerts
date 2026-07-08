@@ -5,6 +5,7 @@ from cost_rental_alerts.export_site import (
     BUTTONDOWN_SUBSCRIBE_URL,
     HUB_LOGO_URL,
     SUBSCRIBE_DISMISS_STORAGE_KEY,
+    SUBSCRIBE_HERO_URL,
     VIEW_MODE_STORAGE_KEY,
     apply_now_schemes,
     build_schemes,
@@ -357,6 +358,7 @@ class ExportSiteTests(unittest.TestCase):
         self.assertIn("subscribe-not-now", html)
         self.assertIn(SUBSCRIBE_DISMISS_STORAGE_KEY, html)
         self.assertIn("data-open-subscribe", html)
+        self.assertIn(SUBSCRIBE_HERO_URL, html)
         self.assertIn("Help improve this", html)
         self.assertIn("lang-toggle", html)
         self.assertIn('data-lang="pt"', html)
