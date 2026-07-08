@@ -47,7 +47,7 @@ Runs at **07:00 UTC** daily. Manual run: **Actions → Daily Cost Rental Scrape 
 - `data/listings.db` — SQLite (committed after each run)
 - [listings-export.csv](data/listings-export.csv) — all schemes
 - [listings-open.csv](data/listings-open.csv) — open only
-- GitHub Pages dashboard — https://mateussibila.github.io/cost-rental-alerts/
+- GitHub Pages dashboard — https://costrentalhub.github.io/
 
 The dashboard is generated from `data/listings-export.csv` and published by
 GitHub Actions after each daily scrape. It is designed for private GitHub Pages

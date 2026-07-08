@@ -2,7 +2,7 @@
 
 ## Current phase — solo testing
 
-Hub is live at https://mateussibila.github.io/cost-rental-alerts/ but **not yet promoted to the public**. One person testing alerts, data quality, and hub UX before wider use.
+Hub is live at https://costrentalhub.github.io/ but **not yet promoted to the public**. One person testing alerts, data quality, and hub UX before wider use.
 
 | Item | Status |
 |---|---|

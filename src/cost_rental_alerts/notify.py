@@ -16,7 +16,7 @@ from cost_rental_alerts.locations import format_city_neighborhood
 TZ = ZoneInfo("Europe/Dublin")
 WHATSAPP_CHUNK_CHARS = int(os.environ.get("WHATSAPP_CHUNK_CHARS", "650"))
 REPORT_ISSUE_EMAIL_DEFAULT = "costrentalhub@gmail.com"
-DEFAULT_SCHEME_HUB_URL = "https://mateussibila.github.io/cost-rental-alerts/"
+DEFAULT_SCHEME_HUB_URL = "https://costrentalhub.github.io/"
 
 
 def _today() -> date:

@@ -5,7 +5,7 @@ import requests
 
 USER_AGENT = (
     "Mozilla/5.0 (compatible; CostRentalAlerts/1.0; "
-    "+https://github.com/mateussibila/cost-rental-alerts)"
+    "+https://github.com/costrentalhub/cost-rental-alerts)"
 )
 BROWSER_HEADERS = {
     "User-Agent": USER_AGENT,

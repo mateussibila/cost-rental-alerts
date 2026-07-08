@@ -19,7 +19,7 @@ from cost_rental_alerts.paths import DATA_DIR, REPO_ROOT
 
 TZ = ZoneInfo("Europe/Dublin")
 SOURCE_LINK_PRIORITY = {"affordablehomes": 0, "lda": 1, "tuath": 2}
-DEFAULT_REPORT_ISSUE_REPO = "mateussibila/cost-rental-alerts"
+DEFAULT_REPORT_ISSUE_REPO = "costrentalhub/cost-rental-alerts"
 
 CSV_PATH = DATA_DIR / "listings-export.csv"
 SITE_DIR = REPO_ROOT / "site"

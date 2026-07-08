@@ -41,6 +41,7 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
           REPORT_ISSUE_EMAIL: ${{ secrets.REPORT_ISSUE_EMAIL }}
+          SCHEME_HUB_URL: ${{ secrets.SCHEME_HUB_URL }}
         run: python -m cost_rental_alerts.run_daily
 
       - name: Export CSV

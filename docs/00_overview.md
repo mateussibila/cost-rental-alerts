@@ -19,9 +19,9 @@ Daily **cost rental** alerts for Ireland. The system scrapes three sources, stor
 | Alerts | WhatsApp + email via `notify.py` |
 | Automation | GitHub Actions — 07:00 UTC daily |
 
-**CSV on GitHub:** [all schemes](https://github.com/mateussibila/cost-rental-alerts/blob/main/data/listings-export.csv) · [open only](https://github.com/mateussibila/cost-rental-alerts/blob/main/data/listings-open.csv)
+**CSV on GitHub:** [all schemes](https://github.com/costrentalhub/cost-rental-alerts/blob/main/data/listings-export.csv) · [open only](https://github.com/costrentalhub/cost-rental-alerts/blob/main/data/listings-open.csv)
 
-**Dashboard:** https://mateussibila.github.io/cost-rental-alerts/
+**Dashboard:** https://costrentalhub.github.io/
 
 ## User flow
 
@@ -40,5 +40,5 @@ Daily **cost rental** alerts for Ireland. The system scrapes three sources, stor
 
 ## Links
 
-- Repo: https://github.com/mateussibila/cost-rental-alerts
-- Actions: https://github.com/mateussibila/cost-rental-alerts/actions
+- Repo: https://github.com/costrentalhub/cost-rental-alerts
+- Actions: https://github.com/costrentalhub/cost-rental-alerts/actions
