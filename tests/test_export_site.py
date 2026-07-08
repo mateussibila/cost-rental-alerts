@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from cost_rental_alerts.export_site import (
     BUTTONDOWN_SUBSCRIBE_URL,
+    HUB_LOGO_URL,
     SUBSCRIBE_DISMISS_STORAGE_KEY,
     VIEW_MODE_STORAGE_KEY,
     apply_now_schemes,
@@ -309,7 +310,8 @@ class ExportSiteTests(unittest.TestCase):
 
         self.assertIn("grid-template-columns: repeat(2, minmax(0, 1fr));", html)
         self.assertIn(".summary-card {\n        padding: 16px;", html)
-        self.assertIn("grid-template-columns: repeat(3, minmax(0, 1fr));", html)
+        self.assertIn("grid-template-columns: repeat(2, minmax(0, 1fr));", html)
+        self.assertIn(".hub-action--primary {\n        grid-column: 1 / -1;", html)
         self.assertIn('class="hub-actions"', html)
 
     def test_hub_actions_replace_toolbar(self):
@@ -319,7 +321,9 @@ class ExportSiteTests(unittest.TestCase):
         self.assertNotIn("scheme-search", html)
         self.assertNotIn("<footer>", html)
         self.assertIn("data-open-about", html)
-        self.assertIn("About this hub", html)
+        self.assertIn("data-open-cost-rental", html)
+        self.assertIn("What is cost rental?", html)
+        self.assertIn("About Ireland Cost Rental Hub", html)
 
     def test_hero_source_text_uses_portals_tooltip(self):
         html = render_html([])
@@ -344,7 +348,7 @@ class ExportSiteTests(unittest.TestCase):
     def test_subscribe_modal_and_hub_actions(self):
         html = render_html([])
 
-        self.assertIn("data-open-subscribe>\n    Email", html)
+        self.assertIn('data-open-subscribe data-i18n="action.email"', html)
         self.assertIn("Get cost rental alerts", html)
         self.assertIn(BUTTONDOWN_SUBSCRIBE_URL, html)
         self.assertIn('name="embed" value="1"', html)
@@ -354,6 +358,16 @@ class ExportSiteTests(unittest.TestCase):
         self.assertIn(SUBSCRIBE_DISMISS_STORAGE_KEY, html)
         self.assertIn("data-open-subscribe", html)
         self.assertIn("Help improve this", html)
+        self.assertIn("lang-toggle", html)
+        self.assertIn('data-lang="pt"', html)
+        self.assertIn("LANGUAGE_STORAGE_KEY", html)
+
+    def test_hero_shows_logo(self):
+        html = render_html([])
+
+        self.assertIn('class="hero-logo"', html)
+        self.assertIn(HUB_LOGO_URL, html)
+        self.assertIn('class="hero-brand"', html)
 
     def test_desktop_view_toggle_defaults_to_table(self):
         html = render_html([])

@@ -6,6 +6,7 @@ from __future__ import annotations
 import csv
 import os
 import re
+import shutil
 import urllib.parse
 from collections.abc import Iterable
 from dataclasses import dataclass, field
@@ -14,6 +15,7 @@ from html import escape
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from cost_rental_alerts.hub_i18n import LANGUAGE_STORAGE_KEY, TRANSLATIONS, translations_json
 from cost_rental_alerts.notify import report_issue_email, scheme_hub_url
 from cost_rental_alerts.paths import DATA_DIR, REPO_ROOT
 
@@ -24,6 +26,9 @@ DEFAULT_REPORT_ISSUE_REPO = "costrentalhub/cost-rental-alerts"
 CSV_PATH = DATA_DIR / "listings-export.csv"
 SITE_DIR = REPO_ROOT / "site"
 INDEX_PATH = SITE_DIR / "index.html"
+HUB_LOGO_PATH = REPO_ROOT / "assets" / "cr-house-logo.png"
+HUB_LOGO_SITE_PATH = SITE_DIR / "assets" / "cr-house-logo.png"
+HUB_LOGO_URL = "assets/cr-house-logo.png"
 
 
 @dataclass
@@ -250,8 +255,30 @@ def fmt_count(count: int, singular: str, plural: str | None = None) -> str:
     return f"{count} {singular if count == 1 else (plural or singular + 's')}"
 
 
+def render_money(value: str) -> str:
+    if value:
+        return escape(f"EUR {value}")
+    return '<span data-i18n="value.tbc">TBC</span>'
+
+
 def money(value: str) -> str:
     return f"EUR {value}" if value else "TBC"
+
+
+def income_range_html(scheme: Scheme) -> str:
+    if scheme.income_min and scheme.income_max:
+        return escape(f"EUR {scheme.income_min} - EUR {scheme.income_max}")
+    if scheme.income_min:
+        return (
+            f'<span data-i18n="value.income_from">From EUR</span> '
+            f"{escape(scheme.income_min)}"
+        )
+    if scheme.income_max:
+        return (
+            f'<span data-i18n="value.income_up_to">Up to EUR</span> '
+            f"{escape(scheme.income_max)}"
+        )
+    return '<span data-i18n="value.not_listed">Not listed</span>'
 
 
 def income_range(scheme: Scheme) -> str:
@@ -288,12 +315,40 @@ SUBSCRIBE_DISMISS_STORAGE_KEY = "crh_email_alerts_dismissed"
 VIEW_MODE_STORAGE_KEY = "crh_scheme_view"
 
 
-def render_detail(label: str, value: str) -> str:
+def status_i18n_key(status: str) -> str:
+    normalized = normalize_key(status)
+    if normalized == "open":
+        return "status.open"
+    if normalized == "opening soon":
+        return "status.opening_soon"
+    return ""
+
+
+def render_status_badge(status: str) -> str:
+    i18n_key = status_i18n_key(status)
+    i18n_attr = f' data-i18n="{i18n_key}"' if i18n_key else ""
+    return (
+        f'<span class="badge badge--{escape(normalize_key(status).replace(" ", "-"))}"'
+        f'{i18n_attr}>{escape(status.title())}</span>'
+    )
+
+
+def render_detail(label_key: str, value_html: str) -> str:
+    label = TRANSLATIONS[label_key]["en"]
     return (
         '<div class="detail">'
-        f'<dt>{escape(label)}</dt>'
-        f'<dd>{escape(value or "Not listed")}</dd>'
+        f'<dt data-i18n="{escape(label_key, quote=True)}">{escape(label)}</dt>'
+        f"<dd>{value_html}</dd>"
         "</div>"
+    )
+
+
+def render_text_value(value: str, *, default_key: str = "not_listed") -> str:
+    if value:
+        return escape(value)
+    default = TRANSLATIONS[f"value.{default_key}"]["en"]
+    return (
+        f'<span data-i18n="value.{default_key}">{escape(default)}</span>'
     )
 
 
@@ -312,21 +367,28 @@ SOURCE_PORTALS_NOTE = (
 
 def render_scheme_card(scheme: Scheme, *, extra_badges: Iterable[str] = ()) -> str:
     badges = [scheme.status, *extra_badges]
-    badge_html = "".join(
-        f'<span class="badge badge--{escape(normalize_key(badge).replace(" ", "-"))}">'
-        f"{escape(badge.title())}</span>"
-        for badge in badges
-        if badge
-    )
+    badge_html = "".join(render_status_badge(badge) for badge in badges if badge)
     details = [
-        render_detail("📍 Location", scheme.location),
-        render_detail("💰 Price from", money(scheme.price)),
-        render_detail("🏠 Homes", scheme.quantity or "TBC"),
-        render_detail("🛏️ Bedrooms", scheme.beds or "TBC"),
-        render_detail("💶 Income", income_range(scheme)),
-        render_detail("📅 Opens", scheme.open_on or "Not listed"),
-        render_detail("⏰ Closes", scheme.close_on or "Not listed"),
+        render_detail("detail.location", render_text_value(scheme.location)),
+        render_detail("detail.price", render_money(scheme.price)),
+        render_detail(
+            "detail.homes",
+            render_text_value(scheme.quantity, default_key="tbc") if not scheme.quantity else escape(scheme.quantity),
+        ),
+        render_detail(
+            "detail.beds",
+            render_text_value(scheme.beds, default_key="tbc") if not scheme.beds else escape(scheme.beds),
+        ),
+        render_detail("detail.income", income_range_html(scheme)),
+        render_detail("detail.opens", render_text_value(scheme.open_on)),
+        render_detail("detail.closes", render_text_value(scheme.close_on)),
     ]
+    scheme_name = scheme.name or TRANSLATIONS["value.unnamed"]["en"]
+    name_html = (
+        f'<span data-i18n="value.unnamed">{escape(scheme_name)}</span>'
+        if not scheme.name
+        else escape(scheme.name)
+    )
     address = (
         f'<p class="address">{escape(scheme.address)}</p>' if scheme.address else ""
     )
@@ -334,7 +396,7 @@ def render_scheme_card(scheme: Scheme, *, extra_badges: Iterable[str] = ()) -> s
 <article class="scheme-card" data-search="{escape(scheme.search_text, quote=True)}">
   <div class="scheme-card__header">
     <div>
-      <h3>{escape(scheme.name or "Unnamed scheme")}</h3>
+      <h3>{name_html}</h3>
       {address}
     </div>
     <div class="badges">{badge_html}</div>
@@ -346,29 +408,35 @@ def render_scheme_card(scheme: Scheme, *, extra_badges: Iterable[str] = ()) -> s
     <div class="source-links">
       {render_source_links(scheme)}
     </div>
-    <a class="scheme-report" href="{escape(report_issue_href(scheme_name=scheme.name), quote=True)}">Report</a>
+    <a class="scheme-report" data-i18n="report" href="{escape(report_issue_href(scheme_name=scheme.name), quote=True)}">Report</a>
   </div>
 </article>
 """.strip()
 
 
 def render_scheme_table_row(scheme: Scheme) -> str:
-    name_cell = f'<strong>{escape(scheme.name or "Unnamed scheme")}</strong>'
+    if scheme.name:
+        name_cell = f"<strong>{escape(scheme.name)}</strong>"
+    else:
+        name_cell = (
+            f'<strong><span data-i18n="value.unnamed">'
+            f'{escape(TRANSLATIONS["value.unnamed"]["en"])}</span></strong>'
+        )
     if scheme.address:
         name_cell += f'<span class="table-scheme__address">{escape(scheme.address)}</span>'
     return f"""
 <tr class="scheme-row" data-search="{escape(scheme.search_text, quote=True)}">
   <td class="table-scheme">{name_cell}</td>
-  <td>{escape(scheme.location or "Not listed")}</td>
-  <td>{escape(money(scheme.price))}</td>
-  <td>{escape(scheme.beds or "TBC")}</td>
-  <td>{escape(scheme.quantity or "TBC")}</td>
-  <td>{escape(income_range(scheme))}</td>
-  <td>{escape(scheme.open_on or "Not listed")}</td>
-  <td>{escape(scheme.close_on or "Not listed")}</td>
+  <td>{render_text_value(scheme.location)}</td>
+  <td>{render_money(scheme.price)}</td>
+  <td>{render_text_value(scheme.beds, default_key="tbc") if not scheme.beds else escape(scheme.beds)}</td>
+  <td>{render_text_value(scheme.quantity, default_key="tbc") if not scheme.quantity else escape(scheme.quantity)}</td>
+  <td>{income_range_html(scheme)}</td>
+  <td>{render_text_value(scheme.open_on)}</td>
+  <td>{render_text_value(scheme.close_on)}</td>
   <td class="table-links">{render_source_links(scheme)}</td>
   <td class="table-report">
-    <a class="scheme-report" href="{escape(report_issue_href(scheme_name=scheme.name), quote=True)}">Report</a>
+    <a class="scheme-report" data-i18n="report" href="{escape(report_issue_href(scheme_name=scheme.name), quote=True)}">Report</a>
   </td>
 </tr>
 """.strip()
@@ -377,26 +445,27 @@ def render_scheme_table_row(scheme: Scheme) -> str:
 def render_scheme_table(
     schemes: list[Scheme],
     *,
-    empty_message: str,
+    empty_key: str,
 ) -> str:
     if not schemes:
-        return f'<p class="empty-state">{escape(empty_message)}</p>'
+        empty = TRANSLATIONS[empty_key]["en"]
+        return f'<p class="empty-state" data-i18n="{escape(empty_key, quote=True)}">{escape(empty)}</p>'
     rows = "\n".join(render_scheme_table_row(scheme) for scheme in schemes)
     return f"""
 <div class="scheme-table-panel">
   <table class="scheme-table">
     <thead>
       <tr>
-        <th scope="col">Scheme</th>
-        <th scope="col">📍 Location</th>
-        <th scope="col">💰 Price</th>
-        <th scope="col">🛏️ Beds</th>
-        <th scope="col">🏠 Homes</th>
-        <th scope="col">💶 Income</th>
-        <th scope="col">📅 Opens</th>
-        <th scope="col">⏰ Closes</th>
-        <th scope="col">Links</th>
-        <th scope="col"><span class="sr-only">Report</span></th>
+        <th scope="col" data-i18n="table.scheme">Scheme</th>
+        <th scope="col" data-i18n="table.location">📍 Location</th>
+        <th scope="col" data-i18n="table.price">💰 Price</th>
+        <th scope="col" data-i18n="table.beds">🛏️ Beds</th>
+        <th scope="col" data-i18n="table.homes">🏠 Homes</th>
+        <th scope="col" data-i18n="table.income">💶 Income</th>
+        <th scope="col" data-i18n="table.opens">📅 Opens</th>
+        <th scope="col" data-i18n="table.closes">⏰ Closes</th>
+        <th scope="col" data-i18n="table.apply_now">Apply now</th>
+        <th scope="col"><span class="sr-only" data-i18n="report">Report</span></th>
       </tr>
     </thead>
     <tbody>
@@ -409,12 +478,13 @@ def render_scheme_table(
 
 def render_hub_actions(*, issue_href: str) -> str:
     return f"""
-<nav class="hub-actions" aria-label="Hub actions">
-  <button type="button" class="hub-action hub-action--primary" data-open-subscribe>
+<nav class="hub-actions" data-i18n-aria="action.hub_actions" aria-label="Hub actions">
+  <button type="button" class="hub-action hub-action--primary" data-open-subscribe data-i18n="action.email">
     Email
   </button>
-  <a class="hub-action" href="{escape(issue_href, quote=True)}">Report</a>
-  <button type="button" class="hub-action" data-open-about>About</button>
+  <a class="hub-action" data-i18n="action.report" href="{escape(issue_href, quote=True)}">Report</a>
+  <button type="button" class="hub-action" data-open-about data-i18n="action.about">About</button>
+  <button type="button" class="hub-action" data-open-cost-rental data-i18n="action.cost_rental">Cost rental</button>
 </nav>
 """.strip()
 
@@ -423,7 +493,7 @@ def render_about_modal(*, issue_href: str) -> str:
     contact_email = escape(report_issue_email())
     issue_link = escape(issue_href, quote=True)
     return f"""
-<div class="about-modal" id="about-modal" hidden aria-hidden="true">
+<div class="about-modal hub-modal" id="about-modal" aria-hidden="true">
   <div class="about-modal__backdrop" data-close-about></div>
   <div
     class="about-modal__panel"
@@ -431,34 +501,104 @@ def render_about_modal(*, issue_href: str) -> str:
     aria-modal="true"
     aria-labelledby="about-modal-title"
   >
-    <button type="button" class="about-modal__close" data-close-about aria-label="Close">
+    <button type="button" class="about-modal__close" data-close-about data-i18n-aria="modal.close" aria-label="Close">
       &times;
     </button>
-    <h2 id="about-modal-title">About this hub</h2>
-    <p class="about-modal__lede">
-      {escape(HUB_TITLE)} lists cost rental schemes you can apply for now, plus schemes
-      opening soon. Updated daily from Irish cost rental portals.
-    </p>
-    <section class="about-modal__section">
-      <h3>Data sources</h3>
-      <p>{escape(SOURCE_PORTALS_NOTE)}</p>
-    </section>
-    <section class="about-modal__section">
-      <h3>Test phase</h3>
-      <p>{escape(TEST_PHASE_NOTE)}</p>
-    </section>
-    <section class="about-modal__section">
-      <h3>Help improve this</h3>
-      <ul class="about-modal__list">
-        <li>Wrong details on a scheme? Use <strong>Report</strong> on that scheme&apos;s card.</li>
-        <li>Another problem? <a href="{issue_link}">Send a report</a>.</li>
-        <li>
-          Want to contribute?
-          <a href="mailto:{contact_email}">{contact_email}</a>.
-        </li>
-      </ul>
-    </section>
-    <button type="button" class="about-modal__done" data-close-about>Close</button>
+    <h2 id="about-modal-title" data-i18n="about.title">About {escape(HUB_TITLE)}</h2>
+    <div class="about-modal__body">
+      <p class="about-modal__lede" data-i18n="about.lede">
+        A daily dashboard for cost rental housing in Ireland. See what you can apply for
+        today and what is opening soon, without checking each portal separately.
+      </p>
+      <section class="about-modal__section">
+        <h3 data-i18n="about.how.title">How it works</h3>
+        <p data-i18n="about.how.body">
+          We check affordablehomes.ie, LDA and Tuath Housing every morning, merge the
+          results, and publish updates here and by email.
+        </p>
+      </section>
+      <section class="about-modal__section">
+        <h3 data-i18n="about.sources.title">Data sources</h3>
+        <p data-i18n="tip.sources">{escape(SOURCE_PORTALS_NOTE)}</p>
+      </section>
+      <section class="about-modal__section">
+        <h3 data-i18n="about.email.title">Email alerts</h3>
+        <p>
+          <span data-i18n="about.email.body">Get one morning email with apply-now and opening-soon schemes.</span>
+          <button type="button" class="about-modal__inline-link" data-open-subscribe data-i18n="about.email.link">
+            Open email signup
+          </button>.
+        </p>
+      </section>
+      <section class="about-modal__section">
+        <h3 data-i18n="about.test.title">Test phase</h3>
+        <p data-i18n="about.test.body">{escape(TEST_PHASE_NOTE)}</p>
+      </section>
+      <section class="about-modal__section">
+        <h3 data-i18n="about.help.title">Help improve this</h3>
+        <ul class="about-modal__list">
+          <li data-i18n="about.help.scheme">Wrong details on a scheme? Use <strong>Report</strong> on that scheme&apos;s card.</li>
+          <li>
+            <span data-i18n="about.help.other">Another problem?</span>
+            <a href="{issue_link}" data-i18n="about.help.report">Send a report</a>.
+          </li>
+          <li>
+            <span data-i18n="about.help.contribute">Want to contribute?</span>
+            <a href="mailto:{contact_email}">{contact_email}</a>.
+          </li>
+        </ul>
+      </section>
+    </div>
+    <button type="button" class="about-modal__done" data-close-about data-i18n="modal.close">Close</button>
+  </div>
+</div>
+""".strip()
+
+
+def render_cost_rental_modal() -> str:
+    return f"""
+<div class="cost-rental-modal hub-modal" id="cost-rental-modal" aria-hidden="true">
+  <div class="cost-rental-modal__backdrop" data-close-cost-rental></div>
+  <div
+    class="cost-rental-modal__panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="cost-rental-modal-title"
+  >
+    <button type="button" class="cost-rental-modal__close" data-close-cost-rental data-i18n-aria="modal.close" aria-label="Close">
+      &times;
+    </button>
+    <h2 id="cost-rental-modal-title" data-i18n="cost_rental.title">What is cost rental?</h2>
+    <div class="cost-rental-modal__body">
+      <p class="cost-rental-modal__lede" data-i18n="cost_rental.lede">
+        Cost rental is a form of affordable housing in Ireland where rent is set below
+        market rates and linked to your household income.
+      </p>
+      <section class="cost-rental-modal__section">
+        <h3 data-i18n="cost_rental.who.title">Who provides it</h3>
+        <p data-i18n="cost_rental.who.body">
+          Schemes are run by approved Irish housing bodies and public agencies, including
+          Clúid, LDA and Tuath Housing. Many others publish through Affordable Homes Ireland.
+        </p>
+      </section>
+      <section class="cost-rental-modal__section">
+        <h3 data-i18n="cost_rental.diff.title">How it differs</h3>
+        <p data-i18n="cost_rental.diff.body">
+          Unlike HAP or the Rental Accommodation Scheme, cost rental is a tenancy in a
+          new affordable home — not a subsidy for a home you find yourself. It is also
+          different from traditional social housing queues, though eligibility can overlap.
+        </p>
+      </section>
+      <section class="cost-rental-modal__section">
+        <h3 data-i18n="cost_rental.apply.title">How to apply</h3>
+        <p data-i18n="cost_rental.apply.body">
+          When a scheme is open, apply through the provider&apos;s portal — affordablehomes.ie,
+          LDA or Tuath Housing. This hub shows what is open now and opening soon so you
+          do not miss a window.
+        </p>
+      </section>
+    </div>
+    <button type="button" class="cost-rental-modal__done" data-close-cost-rental data-i18n="modal.close">Close</button>
   </div>
 </div>
 """.strip()
@@ -467,7 +607,7 @@ def render_about_modal(*, issue_href: str) -> str:
 def render_subscribe_modal() -> str:
     subscribe_url = escape(BUTTONDOWN_SUBSCRIBE_URL, quote=True)
     return f"""
-<div class="subscribe-modal" id="subscribe-modal" hidden aria-hidden="true">
+<div class="subscribe-modal hub-modal" id="subscribe-modal" aria-hidden="true">
   <div class="subscribe-modal__backdrop" data-close-subscribe></div>
   <div
     class="subscribe-modal__panel"
@@ -475,14 +615,30 @@ def render_subscribe_modal() -> str:
     aria-modal="true"
     aria-labelledby="subscribe-modal-title"
   >
-    <button type="button" class="subscribe-modal__close" data-close-subscribe aria-label="Close">
+    <button type="button" class="subscribe-modal__close" data-close-subscribe data-i18n-aria="modal.close" aria-label="Close">
       &times;
     </button>
-    <h2 id="subscribe-modal-title">Get cost rental alerts</h2>
-    <p class="subscribe-modal__lede">
-      One email each morning with cost rental schemes you can apply for now, plus schemes
-      opening soon. We check affordablehomes.ie, LDA, and Tuath Housing for you.{render_info_tip(SOURCE_PORTALS_NOTE)}
-    </p>
+    <h2 id="subscribe-modal-title" data-i18n="subscribe.title">Get cost rental alerts</h2>
+    <div class="subscribe-modal__hero">
+      <img
+        class="subscribe-modal__hero-image"
+        src="{escape(HUB_LOGO_URL, quote=True)}"
+        alt=""
+        width="640"
+        height="200"
+        loading="lazy"
+      >
+    </div>
+    <div class="subscribe-modal__lede">
+      <p class="subscribe-modal__lede-line" data-i18n="subscribe.lede_line1">
+        Get daily alerts for schemes you can apply for now, plus those opening soon.
+      </p>
+      <p class="subscribe-modal__lede-line">
+        <span data-i18n="subscribe.lede_line2">
+          We check affordablehomes.ie, LDA, and Tuath Housing for you.
+        </span>{render_info_tip("tip.sources")}
+      </p>
+    </div>
     <form
       id="subscribe-form"
       class="subscribe-form"
@@ -491,7 +647,7 @@ def render_subscribe_modal() -> str:
       novalidate
     >
       <input type="hidden" name="embed" value="1">
-      <label class="subscribe-form__field" for="subscribe-email">Email</label>
+      <label class="subscribe-form__field" for="subscribe-email" data-i18n="subscribe.email">Email</label>
       <input
         class="subscribe-form__input"
         id="subscribe-email"
@@ -503,51 +659,78 @@ def render_subscribe_modal() -> str:
       >
       <label class="subscribe-form__consent" for="subscribe-consent">
         <input id="subscribe-consent" type="checkbox" name="consent" required>
-        <span>
+        <span data-i18n="subscribe.consent">
           I agree to receive daily {escape(NEWSLETTER_TITLE)} emails. You can unsubscribe at any time.
         </span>
       </label>
-      <p class="subscribe-form__note">
+      <p class="subscribe-form__note" data-i18n="subscribe.note">
         Double opt-in: we will send a confirmation email — click the link to finish subscribing.
       </p>
       <div class="subscribe-form__actions">
-        <button class="subscribe-form__submit" type="submit">Subscribe</button>
-        <button class="subscribe-form__dismiss" type="button" id="subscribe-not-now">Not now</button>
+        <button class="subscribe-form__submit" type="submit" data-i18n="subscribe.submit">Subscribe</button>
+        <button class="subscribe-form__dismiss" type="button" id="subscribe-not-now" data-i18n="subscribe.not_now">Not now</button>
       </div>
       <p class="subscribe-form__error" id="subscribe-error" hidden></p>
     </form>
     <div class="subscribe-success" id="subscribe-success" hidden>
-      <p><strong>Almost there.</strong> Check your inbox and confirm your subscription.</p>
-      <button type="button" class="subscribe-form__submit" data-close-subscribe>Close</button>
+      <p data-i18n="subscribe.success"><strong>Almost there.</strong> Check your inbox and confirm your subscription.</p>
+      <button type="button" class="subscribe-form__submit" data-close-subscribe data-i18n="modal.close">Close</button>
     </div>
   </div>
 </div>
 """.strip()
 
 
-def render_info_tip(text: str) -> str:
+def render_info_tip(key: str) -> str:
+    text = TRANSLATIONS[key]["en"]
     return (
-        '<span class="info-tip" tabindex="0" role="button" aria-label="Section information">'
+        '<span class="info-tip" tabindex="0" role="button" data-i18n-aria="tip.section_info" '
+        'aria-label="Section information">'
         '<span class="info-tip__icon" aria-hidden="true">i</span>'
-        f'<span class="info-tip__popup">{escape(text)}</span>'
+        f'<span class="info-tip__popup" data-i18n="{escape(key, quote=True)}">{escape(text)}</span>'
         "</span>"
     )
 
 
+def render_lang_toggle() -> str:
+    return """
+<div class="lang-toggle" role="group" data-i18n-aria="lang.label" aria-label="Language">
+  <button
+    type="button"
+    class="lang-toggle__btn is-active"
+    data-lang="en"
+    data-i18n-title="lang.en"
+    aria-pressed="true"
+    title="English"
+  >🇮🇪</button>
+  <button
+    type="button"
+    class="lang-toggle__btn"
+    data-lang="pt"
+    data-i18n-title="lang.pt"
+    aria-pressed="false"
+    title="Portuguese"
+  >🇧🇷</button>
+</div>
+""".strip()
+
+
 def render_view_toggle() -> str:
     return """
-<div class="view-toggle" role="group" aria-label="Layout">
+<div class="view-toggle" role="group" data-i18n-aria="view.layout" aria-label="Layout">
   <button
     type="button"
     class="view-toggle__btn is-active"
     data-view-mode="table"
     aria-pressed="true"
+    data-i18n="view.table"
   >Table</button>
   <button
     type="button"
     class="view-toggle__btn"
     data-view-mode="cards"
     aria-pressed="false"
+    data-i18n="view.cards"
   >Cards</button>
 </div>
 """.strip()
@@ -555,19 +738,23 @@ def render_view_toggle() -> str:
 
 def render_section(
     section_id: str,
-    title: str,
-    info_tip: str,
+    title_key: str,
+    tip_key: str,
     schemes: list[Scheme],
     *,
-    empty_message: str,
+    empty_key: str,
     extra_badges: Iterable[str] = (),
 ) -> str:
     cards = "\n".join(
         render_scheme_card(scheme, extra_badges=extra_badges) for scheme in schemes
     )
-    table = render_scheme_table(schemes, empty_message=empty_message)
+    table = render_scheme_table(schemes, empty_key=empty_key)
     if not schemes:
-        cards = f'<p class="empty-state">{escape(empty_message)}</p>'
+        empty = TRANSLATIONS[empty_key]["en"]
+        cards = f'<p class="empty-state" data-i18n="{escape(empty_key, quote=True)}">{escape(empty)}</p>'
+    title = TRANSLATIONS[title_key]["en"]
+    scheme_count = len(schemes)
+    count_label = fmt_count(scheme_count, TRANSLATIONS["count.scheme"]["en"], TRANSLATIONS["count.schemes"]["en"])
     return f"""
 <section
   class="scheme-section"
@@ -577,8 +764,8 @@ def render_section(
 >
   <div class="section-heading">
     <div>
-      <p class="eyebrow">{escape(fmt_count(len(schemes), "scheme"))}</p>
-      <h2 class="section-title">{escape(title)}{render_info_tip(info_tip)}</h2>
+      <p class="eyebrow" data-scheme-count="{scheme_count}">{escape(count_label)}</p>
+      <h2 class="section-title"><span data-i18n="{escape(title_key, quote=True)}">{escape(title)}</span>{render_info_tip(tip_key)}</h2>
     </div>
     {render_view_toggle()}
   </div>
@@ -601,15 +788,16 @@ def render_html(
     apply_now = apply_now_schemes(schemes)
     opening_soon = opening_soon_schemes(schemes)
     generated_label = generated.strftime("%d %b %Y %H:%M %Z")
-    issue_href = escape(report_issue_href(), quote=True)
+    issue_href = report_issue_href()
 
     return f"""<!doctype html>
-<html lang="en">
+<html lang="en" id="hub-root">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
   <title>{escape(HUB_TITLE)}</title>
+  <link rel="icon" href="{escape(HUB_LOGO_URL, quote=True)}" type="image/png">
   <style>
     :root {{
       color-scheme: light;
@@ -647,10 +835,21 @@ def render_html(
       margin-bottom: 28px;
     }}
     .hero h1 {{
-      margin: 0 0 10px;
+      margin: 0;
       font-size: clamp(2rem, 6vw, 4rem);
       line-height: 0.95;
       letter-spacing: -0.05em;
+    }}
+    .hero-brand {{
+      display: flex;
+      align-items: center;
+      gap: clamp(12px, 2vw, 18px);
+      margin-bottom: 10px;
+    }}
+    .hero-logo {{
+      width: clamp(52px, 8vw, 72px);
+      height: clamp(52px, 8vw, 72px);
+      flex-shrink: 0;
     }}
     .hero p {{
       margin: 0;
@@ -666,6 +865,38 @@ def render_html(
       color: var(--muted);
       white-space: nowrap;
       box-shadow: var(--shadow);
+    }}
+    .hero-meta {{
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+    }}
+    .lang-toggle {{
+      display: inline-flex;
+      padding: 4px;
+      border: 1px solid #e8eef5;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.78);
+      box-shadow: 0 8px 24px rgba(16, 32, 51, 0.05);
+    }}
+    .lang-toggle__btn {{
+      min-width: 44px;
+      min-height: 40px;
+      padding: 0 10px;
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      font-size: 1.2rem;
+      line-height: 1;
+      cursor: pointer;
+    }}
+    .lang-toggle__btn.is-active {{
+      background: #eef4ff;
+      box-shadow: inset 0 0 0 1px #c7d8f8;
+    }}
+    .lang-toggle__btn:hover:not(.is-active) {{
+      background: #f8fafc;
     }}
     .summary {{
       display: grid;
@@ -1094,38 +1325,44 @@ def render_html(
     body.hub-modal-open {{
       overflow: hidden;
     }}
-    .subscribe-modal,
-    .about-modal {{
+    .hub-modal {{
+      display: none;
       position: fixed;
       inset: 0;
       z-index: 100;
-      display: grid;
       place-items: center;
       padding: 20px;
     }}
-    .subscribe-modal[hidden],
-    .about-modal[hidden] {{
-      display: none;
+    .hub-modal.is-open {{
+      display: grid;
     }}
+    .hub-modal__backdrop,
     .subscribe-modal__backdrop,
-    .about-modal__backdrop {{
+    .about-modal__backdrop,
+    .cost-rental-modal__backdrop {{
       position: absolute;
       inset: 0;
+      z-index: 0;
       background: rgba(16, 32, 51, 0.45);
       backdrop-filter: blur(4px);
     }}
     .subscribe-modal__panel,
-    .about-modal__panel {{
+    .about-modal__panel,
+    .cost-rental-modal__panel {{
       position: relative;
+      z-index: 1;
       width: min(520px, 100%);
+      max-height: min(88vh, 760px);
       padding: 28px 24px 24px;
       border-radius: 24px;
       border: 1px solid var(--line);
       background: var(--panel);
       box-shadow: var(--shadow);
+      overflow: auto;
     }}
     .subscribe-modal__close,
-    .about-modal__close {{
+    .about-modal__close,
+    .cost-rental-modal__close {{
       position: absolute;
       top: 12px;
       right: 12px;
@@ -1140,21 +1377,57 @@ def render_html(
       cursor: pointer;
     }}
     .subscribe-modal__close:hover,
-    .about-modal__close:hover {{
+    .about-modal__close:hover,
+    .cost-rental-modal__close:hover {{
       color: var(--text);
       background: #eef2f7;
     }}
     .subscribe-modal__panel h2,
-    .about-modal__panel h2 {{
+    .about-modal__panel h2,
+    .cost-rental-modal__panel h2 {{
       margin: 0 0 10px;
       font-size: 1.45rem;
       letter-spacing: -0.02em;
     }}
-    .subscribe-modal__lede,
-    .about-modal__lede {{
+    .about-modal__lede,
+    .cost-rental-modal__lede {{
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }}
+    .about-modal__body,
+    .cost-rental-modal__body {{
+      display: grid;
+      gap: 18px;
+    }}
+    .subscribe-modal__hero {{
+      margin: 0 0 16px;
+      width: 100%;
+      aspect-ratio: 16 / 5;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: linear-gradient(135deg, #e7f0ff 0%, #f8fafc 55%, #eef6ff 100%);
+    }}
+    .subscribe-modal__hero-image {{
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 10px 16px;
+    }}
+    .subscribe-modal__lede {{
       margin: 0 0 18px;
       color: var(--muted);
       font-size: 0.95rem;
+    }}
+    .subscribe-modal__lede-line {{
+      margin: 0;
+      line-height: 1.45;
+    }}
+    .subscribe-modal__lede-line + .subscribe-modal__lede-line {{
+      margin-top: 8px;
     }}
     .subscribe-modal__lede .info-tip {{
       vertical-align: middle;
@@ -1163,10 +1436,12 @@ def render_html(
     .subscribe-modal__lede .info-tip__popup {{
       width: min(300px, 82vw);
     }}
-    .about-modal__section {{
-      margin-top: 18px;
+    .about-modal__section,
+    .cost-rental-modal__section {{
+      margin: 0;
     }}
-    .about-modal__section h3 {{
+    .about-modal__section h3,
+    .cost-rental-modal__section h3 {{
       margin: 0 0 8px;
       font-size: 0.88rem;
       font-weight: 800;
@@ -1174,7 +1449,8 @@ def render_html(
       letter-spacing: 0.06em;
       color: var(--muted);
     }}
-    .about-modal__section p {{
+    .about-modal__section p,
+    .cost-rental-modal__section p {{
       margin: 0;
       color: var(--text);
       font-size: 0.92rem;
@@ -1190,11 +1466,21 @@ def render_html(
     .about-modal__list li + li {{
       margin-top: 8px;
     }}
-    .about-modal__list a {{
+    .about-modal__list a,
+    .about-modal__inline-link {{
       color: var(--brand-dark);
       font-weight: 700;
     }}
-    .about-modal__done {{
+    .about-modal__inline-link {{
+      border: 0;
+      padding: 0;
+      background: none;
+      font: inherit;
+      text-decoration: underline;
+      cursor: pointer;
+    }}
+    .about-modal__done,
+    .cost-rental-modal__done {{
       margin-top: 22px;
       min-height: 44px;
       padding: 0 16px;
@@ -1206,7 +1492,8 @@ def render_html(
       font-weight: 700;
       cursor: pointer;
     }}
-    .about-modal__done:hover {{
+    .about-modal__done:hover,
+    .cost-rental-modal__done:hover {{
       background: var(--brand-dark);
     }}
     .subscribe-form__field {{
@@ -1312,7 +1599,10 @@ def render_html(
       }}
       .hub-actions {{
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }}
+      .hub-action--primary {{
+        grid-column: 1 / -1;
       }}
       .hub-action {{
         width: 100%;
@@ -1368,48 +1658,61 @@ def render_html(
   <main class="page">
     <header class="hero">
       <div>
-        <h1>{escape(HUB_TITLE)}</h1>
-        <p>Cost rental schemes in Ireland — apply now and opening soon. Updated daily from cost rental portals {render_info_tip(SOURCE_PORTALS_NOTE)}.</p>
+        <div class="hero-brand">
+          <img
+            class="hero-logo"
+            src="{escape(HUB_LOGO_URL, quote=True)}"
+            alt=""
+            width="72"
+            height="72"
+          >
+          <h1 data-i18n="hub.title">{escape(HUB_TITLE)}</h1>
+        </div>
+        <p>
+          <span data-i18n="hero.tagline">Cost rental schemes in Ireland — apply now and opening soon. Updated daily from cost rental portals</span>
+          {render_info_tip("tip.sources")}
+        </p>
       </div>
-      <div class="updated">Updated {escape(generated_label)}</div>
+      <div class="hero-meta">
+        {render_lang_toggle()}
+        <div class="updated" id="updated-label" data-timestamp="{escape(generated_label, quote=True)}">
+          <span data-i18n="hero.updated">Updated</span> {escape(generated_label)}
+        </div>
+      </div>
     </header>
 
-    <section class="summary" aria-label="Scheme summary">
-      <div class="summary-card summary-card--apply"><span>🟢 Apply now</span><strong>{len(apply_now)}</strong></div>
-      <div class="summary-card summary-card--opening"><span>🔵 Opening soon</span><strong>{len(opening_soon)}</strong></div>
+    <section class="summary" data-i18n-aria="summary.label" aria-label="Scheme summary">
+      <div class="summary-card summary-card--apply"><span data-i18n="summary.apply_now">🟢 Apply now</span><strong>{len(apply_now)}</strong></div>
+      <div class="summary-card summary-card--opening"><span data-i18n="summary.opening_soon">🔵 Opening soon</span><strong>{len(opening_soon)}</strong></div>
     </section>
 
     {render_hub_actions(issue_href=issue_href)}
 
     {render_section(
         "apply-now",
-        "🟢 Apply now",
-        (
-            "Open application windows. Schemes with a close date are sorted first so the "
-            "earliest deadlines are easiest to spot. "
-            + TEST_PHASE_NOTE
-        ),
+        "section.apply_now.title",
+        "section.apply_now.tip",
         apply_now,
-        empty_message="No schemes are open for applications right now.",
+        empty_key="section.apply_now.empty",
     )}
 
     {render_section(
         "opening-soon",
-        "🔵 Opening soon",
-        (
-            "Not yet open for applications. Sorted by opening date, soonest first. "
-            + TEST_PHASE_NOTE
-        ),
+        "section.opening_soon.title",
+        "section.opening_soon.tip",
         opening_soon,
-        empty_message="No schemes are opening soon right now.",
+        empty_key="section.opening_soon.empty",
     )}
 
   </main>
 
   {render_subscribe_modal()}
   {render_about_modal(issue_href=issue_href)}
+  {render_cost_rental_modal()}
 
   <script>
+    const I18N = {translations_json()};
+    const LANGUAGE_STORAGE_KEY = {escape(LANGUAGE_STORAGE_KEY)!r};
     const SUBSCRIBE_DISMISS_KEY = {escape(SUBSCRIBE_DISMISS_STORAGE_KEY)!r};
     const VIEW_MODE_STORAGE_KEY = {escape(VIEW_MODE_STORAGE_KEY)!r};
     const DESKTOP_LAYOUT = window.matchMedia("(min-width: 960px)");
@@ -1419,35 +1722,58 @@ def render_html(
     const subscribeError = document.getElementById("subscribe-error");
     const subscribeNotNow = document.getElementById("subscribe-not-now");
     const aboutModal = document.getElementById("about-modal");
+    const costRentalModal = document.getElementById("cost-rental-modal");
+    const hubModals = [subscribeModal, aboutModal, costRentalModal].filter(Boolean);
+
+    function isModalOpen(modal) {{
+      return Boolean(modal && modal.classList.contains("is-open"));
+    }}
+
+    function openModal(modal) {{
+      if (!modal) return;
+      hubModals.forEach((item) => {{
+        if (item !== modal) closeModal(item);
+      }});
+      modal.classList.add("is-open");
+      modal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("hub-modal-open");
+      const focusTarget = modal.querySelector(
+        "input, button:not(.subscribe-modal__close):not(.about-modal__close):not(.cost-rental-modal__close), [href]"
+      );
+      if (focusTarget && focusTarget.focus) focusTarget.focus();
+    }}
+
+    function closeModal(modal) {{
+      if (!modal) return;
+      modal.classList.remove("is-open");
+      modal.setAttribute("aria-hidden", "true");
+      if (!hubModals.some(isModalOpen)) {{
+        document.body.classList.remove("hub-modal-open");
+      }}
+    }}
 
     function openSubscribeModal() {{
-      subscribeModal.hidden = false;
-      subscribeModal.setAttribute("aria-hidden", "false");
-      document.body.classList.add("hub-modal-open");
-      const emailInput = document.getElementById("subscribe-email");
-      if (emailInput) emailInput.focus();
+      openModal(subscribeModal);
     }}
 
     function closeSubscribeModal() {{
-      subscribeModal.hidden = true;
-      subscribeModal.setAttribute("aria-hidden", "true");
-      if (aboutModal.hidden) {{
-        document.body.classList.remove("hub-modal-open");
-      }}
+      closeModal(subscribeModal);
     }}
 
     function openAboutModal() {{
-      aboutModal.hidden = false;
-      aboutModal.setAttribute("aria-hidden", "false");
-      document.body.classList.add("hub-modal-open");
+      openModal(aboutModal);
     }}
 
     function closeAboutModal() {{
-      aboutModal.hidden = true;
-      aboutModal.setAttribute("aria-hidden", "true");
-      if (subscribeModal.hidden) {{
-        document.body.classList.remove("hub-modal-open");
-      }}
+      closeModal(aboutModal);
+    }}
+
+    function openCostRentalModal() {{
+      openModal(costRentalModal);
+    }}
+
+    function closeCostRentalModal() {{
+      closeModal(costRentalModal);
     }}
 
     function dismissSubscribePrompt() {{
@@ -1462,6 +1788,8 @@ def render_html(
     document.querySelectorAll("[data-open-subscribe]").forEach((button) => {{
       button.addEventListener("click", (event) => {{
         event.preventDefault();
+        closeAboutModal();
+        closeCostRentalModal();
         openSubscribeModal();
       }});
     }});
@@ -1473,6 +1801,13 @@ def render_html(
       }});
     }});
 
+    document.querySelectorAll("[data-open-cost-rental]").forEach((button) => {{
+      button.addEventListener("click", (event) => {{
+        event.preventDefault();
+        openCostRentalModal();
+      }});
+    }});
+
     document.querySelectorAll("[data-close-subscribe]").forEach((button) => {{
       button.addEventListener("click", closeSubscribeModal);
     }});
@@ -1481,45 +1816,58 @@ def render_html(
       button.addEventListener("click", closeAboutModal);
     }});
 
-    subscribeNotNow.addEventListener("click", dismissSubscribePrompt);
-
-    subscribeForm.addEventListener("submit", async (event) => {{
-      event.preventDefault();
-      subscribeError.hidden = true;
-      subscribeError.textContent = "";
-
-      if (!subscribeForm.reportValidity()) {{
-        return;
-      }}
-
-      const submitButton = subscribeForm.querySelector('button[type="submit"]');
-      const email = new FormData(subscribeForm).get("email");
-      submitButton.disabled = true;
-
-      try {{
-        await fetch(subscribeForm.action, {{
-          method: "POST",
-          body: new URLSearchParams({{ email: String(email || ""), embed: "1" }}),
-          mode: "no-cors",
-        }});
-        subscribeForm.hidden = true;
-        subscribeSuccess.hidden = false;
-        try {{
-          localStorage.setItem(SUBSCRIBE_DISMISS_KEY, "1");
-        }} catch (storageError) {{
-          // Ignore private browsing storage errors.
-        }}
-      }} catch (error) {{
-        subscribeError.hidden = false;
-        subscribeError.textContent = "Could not subscribe right now. Please try again.";
-        submitButton.disabled = false;
-      }}
+    document.querySelectorAll("[data-close-cost-rental]").forEach((button) => {{
+      button.addEventListener("click", closeCostRentalModal);
     }});
+
+    if (subscribeNotNow) {{
+      subscribeNotNow.addEventListener("click", dismissSubscribePrompt);
+    }}
+
+    if (subscribeForm) {{
+      subscribeForm.addEventListener("submit", async (event) => {{
+        event.preventDefault();
+        if (subscribeError) {{
+          subscribeError.hidden = true;
+          subscribeError.textContent = "";
+        }}
+
+        if (!subscribeForm.reportValidity()) {{
+          return;
+        }}
+
+        const submitButton = subscribeForm.querySelector('button[type="submit"]');
+        const email = new FormData(subscribeForm).get("email");
+        if (submitButton) submitButton.disabled = true;
+
+        try {{
+          await fetch(subscribeForm.action, {{
+            method: "POST",
+            body: new URLSearchParams({{ email: String(email || ""), embed: "1" }}),
+            mode: "no-cors",
+          }});
+          subscribeForm.hidden = true;
+          if (subscribeSuccess) subscribeSuccess.hidden = false;
+          try {{
+            localStorage.setItem(SUBSCRIBE_DISMISS_KEY, "1");
+          }} catch (storageError) {{
+            // Ignore private browsing storage errors.
+          }}
+        }} catch (error) {{
+          if (subscribeError) {{
+            subscribeError.hidden = false;
+            subscribeError.textContent = t("subscribe.error", document.documentElement.lang === "pt" ? "pt" : "en");
+          }}
+          if (submitButton) submitButton.disabled = false;
+        }}
+      }});
+    }}
 
     document.addEventListener("keydown", (event) => {{
       if (event.key === "Escape") {{
-        if (!subscribeModal.hidden) closeSubscribeModal();
-        if (!aboutModal.hidden) closeAboutModal();
+        if (isModalOpen(subscribeModal)) closeSubscribeModal();
+        if (isModalOpen(aboutModal)) closeAboutModal();
+        if (isModalOpen(costRentalModal)) closeCostRentalModal();
       }}
     }});
 
@@ -1565,6 +1913,72 @@ def render_html(
     }}
 
     initViewToggles();
+
+    function t(key, lang) {{
+      return I18N[key]?.[lang] ?? I18N[key]?.en ?? "";
+    }}
+
+    function formatSchemeCount(count, lang) {{
+      const label = count === 1 ? t("count.scheme", lang) : t("count.schemes", lang);
+      return `${{count}} ${{label}}`;
+    }}
+
+    function applyLanguage(lang) {{
+      const language = lang === "pt" ? "pt" : "en";
+      document.documentElement.lang = language;
+      document.querySelectorAll("[data-i18n]").forEach((element) => {{
+        const key = element.dataset.i18n;
+        const value = t(key, language);
+        if (value) element.textContent = value;
+      }});
+      document.querySelectorAll("[data-i18n-aria]").forEach((element) => {{
+        const key = element.dataset.i18nAria;
+        const value = t(key, language);
+        if (value) element.setAttribute("aria-label", value);
+      }});
+      document.querySelectorAll("[data-i18n-title]").forEach((element) => {{
+        const key = element.dataset.i18nTitle;
+        const value = t(key, language);
+        if (value) element.setAttribute("title", value);
+      }});
+      document.querySelectorAll("[data-scheme-count]").forEach((element) => {{
+        const count = Number.parseInt(element.dataset.schemeCount || "0", 10);
+        element.textContent = formatSchemeCount(count, language);
+      }});
+      const updatedLabel = document.getElementById("updated-label");
+      if (updatedLabel) {{
+        const timestamp = updatedLabel.dataset.timestamp || "";
+        updatedLabel.textContent = `${{t("hero.updated", language)}} ${{timestamp}}`.trim();
+      }}
+      document.querySelectorAll("[data-lang]").forEach((button) => {{
+        const active = button.dataset.lang === language;
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+      }});
+      try {{
+        localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+      }} catch (error) {{
+        // Ignore private browsing storage errors.
+      }}
+    }}
+
+    function initLanguageToggle() {{
+      let language = "en";
+      try {{
+        const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+        if (stored === "en" || stored === "pt") language = stored;
+      }} catch (error) {{
+        // Ignore private browsing storage errors.
+      }}
+      applyLanguage(language);
+      document.querySelectorAll("[data-lang]").forEach((button) => {{
+        button.addEventListener("click", () => {{
+          applyLanguage(button.dataset.lang);
+        }});
+      }});
+    }}
+
+    initLanguageToggle();
   </script>
 </body>
 </html>
@@ -1581,6 +1995,9 @@ def export_site(
     schemes = build_schemes(rows)
     enrich_scheme_sources(schemes, rows)
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    if HUB_LOGO_PATH.exists():
+        HUB_LOGO_SITE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(HUB_LOGO_PATH, HUB_LOGO_SITE_PATH)
     out_path.write_text(
         render_html(schemes, generated_at=generated_at),
         encoding="utf-8",

@@ -1,10 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" id="hub-root">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
   <title>Ireland Cost Rental Hub</title>
+  <link rel="icon" href="assets/cr-house-logo.png" type="image/png">
   <style>
     :root {
       color-scheme: light;
@@ -42,10 +43,21 @@
       margin-bottom: 28px;
     }
     .hero h1 {
-      margin: 0 0 10px;
+      margin: 0;
       font-size: clamp(2rem, 6vw, 4rem);
       line-height: 0.95;
       letter-spacing: -0.05em;
+    }
+    .hero-brand {
+      display: flex;
+      align-items: center;
+      gap: clamp(12px, 2vw, 18px);
+      margin-bottom: 10px;
+    }
+    .hero-logo {
+      width: clamp(52px, 8vw, 72px);
+      height: clamp(52px, 8vw, 72px);
+      flex-shrink: 0;
     }
     .hero p {
       margin: 0;
@@ -61,6 +73,38 @@
       color: var(--muted);
       white-space: nowrap;
       box-shadow: var(--shadow);
+    }
+    .hero-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+    }
+    .lang-toggle {
+      display: inline-flex;
+      padding: 4px;
+      border: 1px solid #e8eef5;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.78);
+      box-shadow: 0 8px 24px rgba(16, 32, 51, 0.05);
+    }
+    .lang-toggle__btn {
+      min-width: 44px;
+      min-height: 40px;
+      padding: 0 10px;
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      font-size: 1.2rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .lang-toggle__btn.is-active {
+      background: #eef4ff;
+      box-shadow: inset 0 0 0 1px #c7d8f8;
+    }
+    .lang-toggle__btn:hover:not(.is-active) {
+      background: #f8fafc;
     }
     .summary {
       display: grid;
@@ -489,38 +533,44 @@
     body.hub-modal-open {
       overflow: hidden;
     }
-    .subscribe-modal,
-    .about-modal {
+    .hub-modal {
+      display: none;
       position: fixed;
       inset: 0;
       z-index: 100;
-      display: grid;
       place-items: center;
       padding: 20px;
     }
-    .subscribe-modal[hidden],
-    .about-modal[hidden] {
-      display: none;
+    .hub-modal.is-open {
+      display: grid;
     }
+    .hub-modal__backdrop,
     .subscribe-modal__backdrop,
-    .about-modal__backdrop {
+    .about-modal__backdrop,
+    .cost-rental-modal__backdrop {
       position: absolute;
       inset: 0;
+      z-index: 0;
       background: rgba(16, 32, 51, 0.45);
       backdrop-filter: blur(4px);
     }
     .subscribe-modal__panel,
-    .about-modal__panel {
+    .about-modal__panel,
+    .cost-rental-modal__panel {
       position: relative;
+      z-index: 1;
       width: min(520px, 100%);
+      max-height: min(88vh, 760px);
       padding: 28px 24px 24px;
       border-radius: 24px;
       border: 1px solid var(--line);
       background: var(--panel);
       box-shadow: var(--shadow);
+      overflow: auto;
     }
     .subscribe-modal__close,
-    .about-modal__close {
+    .about-modal__close,
+    .cost-rental-modal__close {
       position: absolute;
       top: 12px;
       right: 12px;
@@ -535,21 +585,57 @@
       cursor: pointer;
     }
     .subscribe-modal__close:hover,
-    .about-modal__close:hover {
+    .about-modal__close:hover,
+    .cost-rental-modal__close:hover {
       color: var(--text);
       background: #eef2f7;
     }
     .subscribe-modal__panel h2,
-    .about-modal__panel h2 {
+    .about-modal__panel h2,
+    .cost-rental-modal__panel h2 {
       margin: 0 0 10px;
       font-size: 1.45rem;
       letter-spacing: -0.02em;
     }
-    .subscribe-modal__lede,
-    .about-modal__lede {
+    .about-modal__lede,
+    .cost-rental-modal__lede {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    .about-modal__body,
+    .cost-rental-modal__body {
+      display: grid;
+      gap: 18px;
+    }
+    .subscribe-modal__hero {
+      margin: 0 0 16px;
+      width: 100%;
+      aspect-ratio: 16 / 5;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: linear-gradient(135deg, #e7f0ff 0%, #f8fafc 55%, #eef6ff 100%);
+    }
+    .subscribe-modal__hero-image {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 10px 16px;
+    }
+    .subscribe-modal__lede {
       margin: 0 0 18px;
       color: var(--muted);
       font-size: 0.95rem;
+    }
+    .subscribe-modal__lede-line {
+      margin: 0;
+      line-height: 1.45;
+    }
+    .subscribe-modal__lede-line + .subscribe-modal__lede-line {
+      margin-top: 8px;
     }
     .subscribe-modal__lede .info-tip {
       vertical-align: middle;
@@ -558,10 +644,12 @@
     .subscribe-modal__lede .info-tip__popup {
       width: min(300px, 82vw);
     }
-    .about-modal__section {
-      margin-top: 18px;
+    .about-modal__section,
+    .cost-rental-modal__section {
+      margin: 0;
     }
-    .about-modal__section h3 {
+    .about-modal__section h3,
+    .cost-rental-modal__section h3 {
       margin: 0 0 8px;
       font-size: 0.88rem;
       font-weight: 800;
@@ -569,7 +657,8 @@
       letter-spacing: 0.06em;
       color: var(--muted);
     }
-    .about-modal__section p {
+    .about-modal__section p,
+    .cost-rental-modal__section p {
       margin: 0;
       color: var(--text);
       font-size: 0.92rem;
@@ -585,11 +674,21 @@
     .about-modal__list li + li {
       margin-top: 8px;
     }
-    .about-modal__list a {
+    .about-modal__list a,
+    .about-modal__inline-link {
       color: var(--brand-dark);
       font-weight: 700;
     }
-    .about-modal__done {
+    .about-modal__inline-link {
+      border: 0;
+      padding: 0;
+      background: none;
+      font: inherit;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .about-modal__done,
+    .cost-rental-modal__done {
       margin-top: 22px;
       min-height: 44px;
       padding: 0 16px;
@@ -601,7 +700,8 @@
       font-weight: 700;
       cursor: pointer;
     }
-    .about-modal__done:hover {
+    .about-modal__done:hover,
+    .cost-rental-modal__done:hover {
       background: var(--brand-dark);
     }
     .subscribe-form__field {
@@ -707,7 +807,10 @@
       }
       .hub-actions {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .hub-action--primary {
+        grid-column: 1 / -1;
       }
       .hub-action {
         width: 100%;
@@ -763,23 +866,58 @@
   <main class="page">
     <header class="hero">
       <div>
-        <h1>Ireland Cost Rental Hub</h1>
-        <p>Cost rental schemes in Ireland — apply now and opening soon. Updated daily from cost rental portals <span class="info-tip" tabindex="0" role="button" aria-label="Section information"><span class="info-tip__icon" aria-hidden="true">i</span><span class="info-tip__popup">Data comes from Affordable Homes Ireland, LDA and Tuath Housing. Other cost-rental providers, including Clúid, Respond, Circle VHA, Co-operative Housing Ireland, Oaklee, Ó Cualann and Fold Ireland, usually publish their schemes through Affordable Homes Ireland, so they are covered there rather than listed separately.</span></span>.</p>
+        <div class="hero-brand">
+          <img
+            class="hero-logo"
+            src="assets/cr-house-logo.png"
+            alt=""
+            width="72"
+            height="72"
+          >
+          <h1 data-i18n="hub.title">Ireland Cost Rental Hub</h1>
+        </div>
+        <p>
+          <span data-i18n="hero.tagline">Cost rental schemes in Ireland — apply now and opening soon. Updated daily from cost rental portals</span>
+          <span class="info-tip" tabindex="0" role="button" data-i18n-aria="tip.section_info" aria-label="Section information"><span class="info-tip__icon" aria-hidden="true">i</span><span class="info-tip__popup" data-i18n="tip.sources">Data comes from Affordable Homes Ireland, LDA and Tuath Housing. Other cost-rental providers, including Clúid, Respond, Circle VHA, Co-operative Housing Ireland, Oaklee, Ó Cualann and Fold Ireland, usually publish their schemes through Affordable Homes Ireland, so they are covered there rather than listed separately.</span></span>
+        </p>
       </div>
-      <div class="updated">Updated 08 Jul 2026 21:06 IST</div>
+      <div class="hero-meta">
+        <div class="lang-toggle" role="group" data-i18n-aria="lang.label" aria-label="Language">
+  <button
+    type="button"
+    class="lang-toggle__btn is-active"
+    data-lang="en"
+    data-i18n-title="lang.en"
+    aria-pressed="true"
+    title="English"
+  >🇮🇪</button>
+  <button
+    type="button"
+    class="lang-toggle__btn"
+    data-lang="pt"
+    data-i18n-title="lang.pt"
+    aria-pressed="false"
+    title="Portuguese"
+  >🇧🇷</button>
+</div>
+        <div class="updated" id="updated-label" data-timestamp="08 Jul 2026 21:23 IST">
+          <span data-i18n="hero.updated">Updated</span> 08 Jul 2026 21:23 IST
+        </div>
+      </div>
     </header>
 
-    <section class="summary" aria-label="Scheme summary">
-      <div class="summary-card summary-card--apply"><span>🟢 Apply now</span><strong>6</strong></div>
-      <div class="summary-card summary-card--opening"><span>🔵 Opening soon</span><strong>0</strong></div>
+    <section class="summary" data-i18n-aria="summary.label" aria-label="Scheme summary">
+      <div class="summary-card summary-card--apply"><span data-i18n="summary.apply_now">🟢 Apply now</span><strong>6</strong></div>
+      <div class="summary-card summary-card--opening"><span data-i18n="summary.opening_soon">🔵 Opening soon</span><strong>0</strong></div>
     </section>
 
-    <nav class="hub-actions" aria-label="Hub actions">
-  <button type="button" class="hub-action hub-action--primary" data-open-subscribe>
+    <nav class="hub-actions" data-i18n-aria="action.hub_actions" aria-label="Hub actions">
+  <button type="button" class="hub-action hub-action--primary" data-open-subscribe data-i18n="action.email">
     Email
   </button>
-  <a class="hub-action" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;amp;body=Scheme%20name%3A%20%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
-  <button type="button" class="hub-action" data-open-about>About</button>
+  <a class="hub-action" data-i18n="action.report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
+  <button type="button" class="hub-action" data-open-about data-i18n="action.about">About</button>
+  <button type="button" class="hub-action" data-open-cost-rental data-i18n="action.cost_rental">Cost rental</button>
 </nav>
 
     <section
@@ -790,21 +928,23 @@
 >
   <div class="section-heading">
     <div>
-      <p class="eyebrow">6 schemes</p>
-      <h2 class="section-title">🟢 Apply now<span class="info-tip" tabindex="0" role="button" aria-label="Section information"><span class="info-tip__icon" aria-hidden="true">i</span><span class="info-tip__popup">Open application windows. Schemes with a close date are sorted first so the earliest deadlines are easiest to spot. This app is in test phase. If you find inconsistencies, please use the Report button and we will work on fixing the problem.</span></span></h2>
+      <p class="eyebrow" data-scheme-count="6">6 schemes</p>
+      <h2 class="section-title"><span data-i18n="section.apply_now.title">🟢 Apply now</span><span class="info-tip" tabindex="0" role="button" data-i18n-aria="tip.section_info" aria-label="Section information"><span class="info-tip__icon" aria-hidden="true">i</span><span class="info-tip__popup" data-i18n="section.apply_now.tip">Open application windows. Schemes with a close date are sorted first so the earliest deadlines are easiest to spot. This app is in test phase. If you find inconsistencies, please use the Report button and we will work on fixing the problem.</span></span></h2>
     </div>
-    <div class="view-toggle" role="group" aria-label="Layout">
+    <div class="view-toggle" role="group" data-i18n-aria="view.layout" aria-label="Layout">
   <button
     type="button"
     class="view-toggle__btn is-active"
     data-view-mode="table"
     aria-pressed="true"
+    data-i18n="view.table"
   >Table</button>
   <button
     type="button"
     class="view-toggle__btn"
     data-view-mode="cards"
     aria-pressed="false"
+    data-i18n="view.cards"
   >Cards</button>
 </div>
   </div>
@@ -815,16 +955,16 @@
       <h3>Barnoaks</h3>
       <p class="address">Barnoaks, Citywest, Co. Dublin, Ireland</p>
     </div>
-    <div class="badges"><span class="badge badge--open">Open</span></div>
+    <div class="badges"><span class="badge badge--open" data-i18n="status.open">Open</span></div>
   </div>
   <dl class="details">
-    <div class="detail"><dt>📍 Location</dt><dd>Dublin - Citywest</dd></div><div class="detail"><dt>💰 Price from</dt><dd>EUR 1026</dd></div><div class="detail"><dt>🏠 Homes</dt><dd>1</dd></div><div class="detail"><dt>🛏️ Bedrooms</dt><dd>1</dd></div><div class="detail"><dt>💶 Income</dt><dd>Not listed</dd></div><div class="detail"><dt>📅 Opens</dt><dd>02/07/2026</dd></div><div class="detail"><dt>⏰ Closes</dt><dd>09/07/2026</dd></div>
+    <div class="detail"><dt data-i18n="detail.location">📍 Location</dt><dd>Dublin - Citywest</dd></div><div class="detail"><dt data-i18n="detail.price">💰 Price from</dt><dd>EUR 1026</dd></div><div class="detail"><dt data-i18n="detail.homes">🏠 Homes</dt><dd>1</dd></div><div class="detail"><dt data-i18n="detail.beds">🛏️ Bedrooms</dt><dd>1</dd></div><div class="detail"><dt data-i18n="detail.income">💶 Income</dt><dd><span data-i18n="value.not_listed">Not listed</span></dd></div><div class="detail"><dt data-i18n="detail.opens">📅 Opens</dt><dd>02/07/2026</dd></div><div class="detail"><dt data-i18n="detail.closes">⏰ Closes</dt><dd>09/07/2026</dd></div>
   </dl>
   <div class="scheme-card__footer">
     <div class="source-links">
       <a class="source-link" href="https://affordablehomes.ie/rent/barnoaks1/" target="_blank" rel="noopener noreferrer">affordablehomes</a>
     </div>
-    <a class="scheme-report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Barnoaks%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
+    <a class="scheme-report" data-i18n="report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Barnoaks%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
   </div>
 </article>
 <article class="scheme-card" data-search="swiftbanks dublin - saggart swiftbanks, mill road, saggart, co. dublin, ireland open 1375 1 1 02/07/2026 09/07/2026 affordablehomes">
@@ -833,16 +973,16 @@
       <h3>Swiftbanks</h3>
       <p class="address">Swiftbanks, Mill Road, Saggart, Co. Dublin, Ireland</p>
     </div>
-    <div class="badges"><span class="badge badge--open">Open</span></div>
+    <div class="badges"><span class="badge badge--open" data-i18n="status.open">Open</span></div>
   </div>
   <dl class="details">
-    <div class="detail"><dt>📍 Location</dt><dd>Dublin - Saggart</dd></div><div class="detail"><dt>💰 Price from</dt><dd>EUR 1375</dd></div><div class="detail"><dt>🏠 Homes</dt><dd>1</dd></div><div class="detail"><dt>🛏️ Bedrooms</dt><dd>1</dd></div><div class="detail"><dt>💶 Income</dt><dd>Not listed</dd></div><div class="detail"><dt>📅 Opens</dt><dd>02/07/2026</dd></div><div class="detail"><dt>⏰ Closes</dt><dd>09/07/2026</dd></div>
+    <div class="detail"><dt data-i18n="detail.location">📍 Location</dt><dd>Dublin - Saggart</dd></div><div class="detail"><dt data-i18n="detail.price">💰 Price from</dt><dd>EUR 1375</dd></div><div class="detail"><dt data-i18n="detail.homes">🏠 Homes</dt><dd>1</dd></div><div class="detail"><dt data-i18n="detail.beds">🛏️ Bedrooms</dt><dd>1</dd></div><div class="detail"><dt data-i18n="detail.income">💶 Income</dt><dd><span data-i18n="value.not_listed">Not listed</span></dd></div><div class="detail"><dt data-i18n="detail.opens">📅 Opens</dt><dd>02/07/2026</dd></div><div class="detail"><dt data-i18n="detail.closes">⏰ Closes</dt><dd>09/07/2026</dd></div>
   </dl>
   <div class="scheme-card__footer">
     <div class="source-links">
       <a class="source-link" href="https://affordablehomes.ie/rent/swiftbanks1/" target="_blank" rel="noopener noreferrer">affordablehomes</a>
     </div>
-    <a class="scheme-report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Swiftbanks%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
+    <a class="scheme-report" data-i18n="report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Swiftbanks%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
   </div>
 </article>
 <article class="scheme-card" data-search="deverdon place dublin - malahide road deverdon place, malahide road, co. dublin, ireland open 1742 1 2 06/07/2026 13/07/2026 affordablehomes">
@@ -851,16 +991,16 @@
       <h3>DeVerdon Place</h3>
       <p class="address">DeVerdon Place, Malahide Road, Co. Dublin, Ireland</p>
     </div>
-    <div class="badges"><span class="badge badge--open">Open</span></div>
+    <div class="badges"><span class="badge badge--open" data-i18n="status.open">Open</span></div>
   </div>
   <dl class="details">
-    <div class="detail"><dt>📍 Location</dt><dd>Dublin - Malahide Road</dd></div><div class="detail"><dt>💰 Price from</dt><dd>EUR 1742</dd></div><div class="detail"><dt>🏠 Homes</dt><dd>1</dd></div><div class="detail"><dt>🛏️ Bedrooms</dt><dd>2</dd></div><div class="detail"><dt>💶 Income</dt><dd>Not listed</dd></div><div class="detail"><dt>📅 Opens</dt><dd>06/07/2026</dd></div><div class="detail"><dt>⏰ Closes</dt><dd>13/07/2026</dd></div>
+    <div class="detail"><dt data-i18n="detail.location">📍 Location</dt><dd>Dublin - Malahide Road</dd></div><div class="detail"><dt data-i18n="detail.price">💰 Price from</dt><dd>EUR 1742</dd></div><div class="detail"><dt data-i18n="detail.homes">🏠 Homes</dt><dd>1</dd></div><div class="detail"><dt data-i18n="detail.beds">🛏️ Bedrooms</dt><dd>2</dd></div><div class="detail"><dt data-i18n="detail.income">💶 Income</dt><dd><span data-i18n="value.not_listed">Not listed</span></dd></div><div class="detail"><dt data-i18n="detail.opens">📅 Opens</dt><dd>06/07/2026</dd></div><div class="detail"><dt data-i18n="detail.closes">⏰ Closes</dt><dd>13/07/2026</dd></div>
   </dl>
   <div class="scheme-card__footer">
     <div class="source-links">
       <a class="source-link" href="https://affordablehomes.ie/rent/deverdonplace3/" target="_blank" rel="noopener noreferrer">affordablehomes</a>
     </div>
-    <a class="scheme-report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20DeVerdon%20Place%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
+    <a class="scheme-report" data-i18n="report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20DeVerdon%20Place%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
   </div>
 </article>
 <article class="scheme-card" data-search="pipers square dublin - charlestown pipers square, charlestown, co. dublin, ireland open 1387 140 1-3 06/07/2026 13/07/2026 affordablehomes">
@@ -869,16 +1009,16 @@
       <h3>Pipers Square</h3>
       <p class="address">Pipers Square, Charlestown, Co. Dublin, Ireland</p>
     </div>
-    <div class="badges"><span class="badge badge--open">Open</span></div>
+    <div class="badges"><span class="badge badge--open" data-i18n="status.open">Open</span></div>
   </div>
   <dl class="details">
-    <div class="detail"><dt>📍 Location</dt><dd>Dublin - Charlestown</dd></div><div class="detail"><dt>💰 Price from</dt><dd>EUR 1387</dd></div><div class="detail"><dt>🏠 Homes</dt><dd>140</dd></div><div class="detail"><dt>🛏️ Bedrooms</dt><dd>1-3</dd></div><div class="detail"><dt>💶 Income</dt><dd>Not listed</dd></div><div class="detail"><dt>📅 Opens</dt><dd>06/07/2026</dd></div><div class="detail"><dt>⏰ Closes</dt><dd>13/07/2026</dd></div>
+    <div class="detail"><dt data-i18n="detail.location">📍 Location</dt><dd>Dublin - Charlestown</dd></div><div class="detail"><dt data-i18n="detail.price">💰 Price from</dt><dd>EUR 1387</dd></div><div class="detail"><dt data-i18n="detail.homes">🏠 Homes</dt><dd>140</dd></div><div class="detail"><dt data-i18n="detail.beds">🛏️ Bedrooms</dt><dd>1-3</dd></div><div class="detail"><dt data-i18n="detail.income">💶 Income</dt><dd><span data-i18n="value.not_listed">Not listed</span></dd></div><div class="detail"><dt data-i18n="detail.opens">📅 Opens</dt><dd>06/07/2026</dd></div><div class="detail"><dt data-i18n="detail.closes">⏰ Closes</dt><dd>13/07/2026</dd></div>
   </dl>
   <div class="scheme-card__footer">
     <div class="source-links">
       <a class="source-link" href="https://affordablehomes.ie/rent/piperssquare1/" target="_blank" rel="noopener noreferrer">affordablehomes</a>
     </div>
-    <a class="scheme-report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Pipers%20Square%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
+    <a class="scheme-report" data-i18n="report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Pipers%20Square%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
   </div>
 </article>
 <article class="scheme-card" data-search="warrens court cork warrens court, barnahely, ringaskiddy, co. cork, ireland open 1195 17 2-3 29/06/2026 13/07/2026 affordablehomes">
@@ -887,16 +1027,16 @@
       <h3>Warrens Court</h3>
       <p class="address">Warrens Court, Barnahely, Ringaskiddy, Co. Cork, Ireland</p>
     </div>
-    <div class="badges"><span class="badge badge--open">Open</span></div>
+    <div class="badges"><span class="badge badge--open" data-i18n="status.open">Open</span></div>
   </div>
   <dl class="details">
-    <div class="detail"><dt>📍 Location</dt><dd>Cork</dd></div><div class="detail"><dt>💰 Price from</dt><dd>EUR 1195</dd></div><div class="detail"><dt>🏠 Homes</dt><dd>17</dd></div><div class="detail"><dt>🛏️ Bedrooms</dt><dd>2-3</dd></div><div class="detail"><dt>💶 Income</dt><dd>Not listed</dd></div><div class="detail"><dt>📅 Opens</dt><dd>29/06/2026</dd></div><div class="detail"><dt>⏰ Closes</dt><dd>13/07/2026</dd></div>
+    <div class="detail"><dt data-i18n="detail.location">📍 Location</dt><dd>Cork</dd></div><div class="detail"><dt data-i18n="detail.price">💰 Price from</dt><dd>EUR 1195</dd></div><div class="detail"><dt data-i18n="detail.homes">🏠 Homes</dt><dd>17</dd></div><div class="detail"><dt data-i18n="detail.beds">🛏️ Bedrooms</dt><dd>2-3</dd></div><div class="detail"><dt data-i18n="detail.income">💶 Income</dt><dd><span data-i18n="value.not_listed">Not listed</span></dd></div><div class="detail"><dt data-i18n="detail.opens">📅 Opens</dt><dd>29/06/2026</dd></div><div class="detail"><dt data-i18n="detail.closes">⏰ Closes</dt><dd>13/07/2026</dd></div>
   </dl>
   <div class="scheme-card__footer">
     <div class="source-links">
       <a class="source-link" href="https://affordablehomes.ie/rent/warrenscourt/" target="_blank" rel="noopener noreferrer">affordablehomes</a>
     </div>
-    <a class="scheme-report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Warrens%20Court%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
+    <a class="scheme-report" data-i18n="report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Warrens%20Court%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
   </div>
 </article>
 <article class="scheme-card" data-search="folkstown park dublin - balbriggan folkstown park, balbriggan, co. dublin, ireland open 1150 40 1-3 04/06/2026 tuath">
@@ -905,16 +1045,16 @@
       <h3>Folkstown Park</h3>
       <p class="address">Folkstown Park, Balbriggan, Co. Dublin, Ireland</p>
     </div>
-    <div class="badges"><span class="badge badge--open">Open</span></div>
+    <div class="badges"><span class="badge badge--open" data-i18n="status.open">Open</span></div>
   </div>
   <dl class="details">
-    <div class="detail"><dt>📍 Location</dt><dd>Dublin - Balbriggan</dd></div><div class="detail"><dt>💰 Price from</dt><dd>EUR 1150</dd></div><div class="detail"><dt>🏠 Homes</dt><dd>40</dd></div><div class="detail"><dt>🛏️ Bedrooms</dt><dd>1-3</dd></div><div class="detail"><dt>💶 Income</dt><dd>Not listed</dd></div><div class="detail"><dt>📅 Opens</dt><dd>04/06/2026</dd></div><div class="detail"><dt>⏰ Closes</dt><dd>Not listed</dd></div>
+    <div class="detail"><dt data-i18n="detail.location">📍 Location</dt><dd>Dublin - Balbriggan</dd></div><div class="detail"><dt data-i18n="detail.price">💰 Price from</dt><dd>EUR 1150</dd></div><div class="detail"><dt data-i18n="detail.homes">🏠 Homes</dt><dd>40</dd></div><div class="detail"><dt data-i18n="detail.beds">🛏️ Bedrooms</dt><dd>1-3</dd></div><div class="detail"><dt data-i18n="detail.income">💶 Income</dt><dd><span data-i18n="value.not_listed">Not listed</span></dd></div><div class="detail"><dt data-i18n="detail.opens">📅 Opens</dt><dd>04/06/2026</dd></div><div class="detail"><dt data-i18n="detail.closes">⏰ Closes</dt><dd><span data-i18n="value.not_listed">Not listed</span></dd></div>
   </dl>
   <div class="scheme-card__footer">
     <div class="source-links">
       <a class="source-link" href="https://tuathhousing.ie/properties/folkstown-park-2/" target="_blank" rel="noopener noreferrer">tuath</a>
     </div>
-    <a class="scheme-report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Folkstown%20Park%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
+    <a class="scheme-report" data-i18n="report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Folkstown%20Park%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
   </div>
 </article>
   </div>
@@ -923,16 +1063,16 @@
   <table class="scheme-table">
     <thead>
       <tr>
-        <th scope="col">Scheme</th>
-        <th scope="col">📍 Location</th>
-        <th scope="col">💰 Price</th>
-        <th scope="col">🛏️ Beds</th>
-        <th scope="col">🏠 Homes</th>
-        <th scope="col">💶 Income</th>
-        <th scope="col">📅 Opens</th>
-        <th scope="col">⏰ Closes</th>
-        <th scope="col">Links</th>
-        <th scope="col"><span class="sr-only">Report</span></th>
+        <th scope="col" data-i18n="table.scheme">Scheme</th>
+        <th scope="col" data-i18n="table.location">📍 Location</th>
+        <th scope="col" data-i18n="table.price">💰 Price</th>
+        <th scope="col" data-i18n="table.beds">🛏️ Beds</th>
+        <th scope="col" data-i18n="table.homes">🏠 Homes</th>
+        <th scope="col" data-i18n="table.income">💶 Income</th>
+        <th scope="col" data-i18n="table.opens">📅 Opens</th>
+        <th scope="col" data-i18n="table.closes">⏰ Closes</th>
+        <th scope="col" data-i18n="table.apply_now">Apply now</th>
+        <th scope="col"><span class="sr-only" data-i18n="report">Report</span></th>
       </tr>
     </thead>
     <tbody>
@@ -942,12 +1082,12 @@
   <td>EUR 1026</td>
   <td>1</td>
   <td>1</td>
-  <td>Not listed</td>
+  <td><span data-i18n="value.not_listed">Not listed</span></td>
   <td>02/07/2026</td>
   <td>09/07/2026</td>
   <td class="table-links"><a class="source-link" href="https://affordablehomes.ie/rent/barnoaks1/" target="_blank" rel="noopener noreferrer">affordablehomes</a></td>
   <td class="table-report">
-    <a class="scheme-report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Barnoaks%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
+    <a class="scheme-report" data-i18n="report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Barnoaks%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
   </td>
 </tr>
 <tr class="scheme-row" data-search="swiftbanks dublin - saggart swiftbanks, mill road, saggart, co. dublin, ireland open 1375 1 1 02/07/2026 09/07/2026 affordablehomes">
@@ -956,12 +1096,12 @@
   <td>EUR 1375</td>
   <td>1</td>
   <td>1</td>
-  <td>Not listed</td>
+  <td><span data-i18n="value.not_listed">Not listed</span></td>
   <td>02/07/2026</td>
   <td>09/07/2026</td>
   <td class="table-links"><a class="source-link" href="https://affordablehomes.ie/rent/swiftbanks1/" target="_blank" rel="noopener noreferrer">affordablehomes</a></td>
   <td class="table-report">
-    <a class="scheme-report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Swiftbanks%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
+    <a class="scheme-report" data-i18n="report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Swiftbanks%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
   </td>
 </tr>
 <tr class="scheme-row" data-search="deverdon place dublin - malahide road deverdon place, malahide road, co. dublin, ireland open 1742 1 2 06/07/2026 13/07/2026 affordablehomes">
@@ -970,12 +1110,12 @@
   <td>EUR 1742</td>
   <td>2</td>
   <td>1</td>
-  <td>Not listed</td>
+  <td><span data-i18n="value.not_listed">Not listed</span></td>
   <td>06/07/2026</td>
   <td>13/07/2026</td>
   <td class="table-links"><a class="source-link" href="https://affordablehomes.ie/rent/deverdonplace3/" target="_blank" rel="noopener noreferrer">affordablehomes</a></td>
   <td class="table-report">
-    <a class="scheme-report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20DeVerdon%20Place%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
+    <a class="scheme-report" data-i18n="report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20DeVerdon%20Place%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
   </td>
 </tr>
 <tr class="scheme-row" data-search="pipers square dublin - charlestown pipers square, charlestown, co. dublin, ireland open 1387 140 1-3 06/07/2026 13/07/2026 affordablehomes">
@@ -984,12 +1124,12 @@
   <td>EUR 1387</td>
   <td>1-3</td>
   <td>140</td>
-  <td>Not listed</td>
+  <td><span data-i18n="value.not_listed">Not listed</span></td>
   <td>06/07/2026</td>
   <td>13/07/2026</td>
   <td class="table-links"><a class="source-link" href="https://affordablehomes.ie/rent/piperssquare1/" target="_blank" rel="noopener noreferrer">affordablehomes</a></td>
   <td class="table-report">
-    <a class="scheme-report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Pipers%20Square%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
+    <a class="scheme-report" data-i18n="report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Pipers%20Square%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
   </td>
 </tr>
 <tr class="scheme-row" data-search="warrens court cork warrens court, barnahely, ringaskiddy, co. cork, ireland open 1195 17 2-3 29/06/2026 13/07/2026 affordablehomes">
@@ -998,12 +1138,12 @@
   <td>EUR 1195</td>
   <td>2-3</td>
   <td>17</td>
-  <td>Not listed</td>
+  <td><span data-i18n="value.not_listed">Not listed</span></td>
   <td>29/06/2026</td>
   <td>13/07/2026</td>
   <td class="table-links"><a class="source-link" href="https://affordablehomes.ie/rent/warrenscourt/" target="_blank" rel="noopener noreferrer">affordablehomes</a></td>
   <td class="table-report">
-    <a class="scheme-report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Warrens%20Court%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
+    <a class="scheme-report" data-i18n="report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Warrens%20Court%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
   </td>
 </tr>
 <tr class="scheme-row" data-search="folkstown park dublin - balbriggan folkstown park, balbriggan, co. dublin, ireland open 1150 40 1-3 04/06/2026 tuath">
@@ -1012,12 +1152,12 @@
   <td>EUR 1150</td>
   <td>1-3</td>
   <td>40</td>
-  <td>Not listed</td>
+  <td><span data-i18n="value.not_listed">Not listed</span></td>
   <td>04/06/2026</td>
-  <td>Not listed</td>
+  <td><span data-i18n="value.not_listed">Not listed</span></td>
   <td class="table-links"><a class="source-link" href="https://tuathhousing.ie/properties/folkstown-park-2/" target="_blank" rel="noopener noreferrer">tuath</a></td>
   <td class="table-report">
-    <a class="scheme-report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Folkstown%20Park%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
+    <a class="scheme-report" data-i18n="report" href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20Folkstown%20Park%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Report</a>
   </td>
 </tr>
     </tbody>
@@ -1034,35 +1174,37 @@
 >
   <div class="section-heading">
     <div>
-      <p class="eyebrow">0 schemes</p>
-      <h2 class="section-title">🔵 Opening soon<span class="info-tip" tabindex="0" role="button" aria-label="Section information"><span class="info-tip__icon" aria-hidden="true">i</span><span class="info-tip__popup">Not yet open for applications. Sorted by opening date, soonest first. This app is in test phase. If you find inconsistencies, please use the Report button and we will work on fixing the problem.</span></span></h2>
+      <p class="eyebrow" data-scheme-count="0">0 schemes</p>
+      <h2 class="section-title"><span data-i18n="section.opening_soon.title">🔵 Opening soon</span><span class="info-tip" tabindex="0" role="button" data-i18n-aria="tip.section_info" aria-label="Section information"><span class="info-tip__icon" aria-hidden="true">i</span><span class="info-tip__popup" data-i18n="section.opening_soon.tip">Not yet open for applications. Sorted by opening date, soonest first. This app is in test phase. If you find inconsistencies, please use the Report button and we will work on fixing the problem.</span></span></h2>
     </div>
-    <div class="view-toggle" role="group" aria-label="Layout">
+    <div class="view-toggle" role="group" data-i18n-aria="view.layout" aria-label="Layout">
   <button
     type="button"
     class="view-toggle__btn is-active"
     data-view-mode="table"
     aria-pressed="true"
+    data-i18n="view.table"
   >Table</button>
   <button
     type="button"
     class="view-toggle__btn"
     data-view-mode="cards"
     aria-pressed="false"
+    data-i18n="view.cards"
   >Cards</button>
 </div>
   </div>
   <div class="scheme-grid scheme-grid--cards">
-    <p class="empty-state">No schemes are opening soon right now.</p>
+    <p class="empty-state" data-i18n="section.opening_soon.empty">No schemes are opening soon right now.</p>
   </div>
   <div class="scheme-table-wrap">
-    <p class="empty-state">No schemes are opening soon right now.</p>
+    <p class="empty-state" data-i18n="section.opening_soon.empty">No schemes are opening soon right now.</p>
   </div>
 </section>
 
   </main>
 
-  <div class="subscribe-modal" id="subscribe-modal" hidden aria-hidden="true">
+  <div class="subscribe-modal hub-modal" id="subscribe-modal" aria-hidden="true">
   <div class="subscribe-modal__backdrop" data-close-subscribe></div>
   <div
     class="subscribe-modal__panel"
@@ -1070,14 +1212,30 @@
     aria-modal="true"
     aria-labelledby="subscribe-modal-title"
   >
-    <button type="button" class="subscribe-modal__close" data-close-subscribe aria-label="Close">
+    <button type="button" class="subscribe-modal__close" data-close-subscribe data-i18n-aria="modal.close" aria-label="Close">
       &times;
     </button>
-    <h2 id="subscribe-modal-title">Get cost rental alerts</h2>
-    <p class="subscribe-modal__lede">
-      One email each morning with cost rental schemes you can apply for now, plus schemes
-      opening soon. We check affordablehomes.ie, LDA, and Tuath Housing for you.<span class="info-tip" tabindex="0" role="button" aria-label="Section information"><span class="info-tip__icon" aria-hidden="true">i</span><span class="info-tip__popup">Data comes from Affordable Homes Ireland, LDA and Tuath Housing. Other cost-rental providers, including Clúid, Respond, Circle VHA, Co-operative Housing Ireland, Oaklee, Ó Cualann and Fold Ireland, usually publish their schemes through Affordable Homes Ireland, so they are covered there rather than listed separately.</span></span>
-    </p>
+    <h2 id="subscribe-modal-title" data-i18n="subscribe.title">Get cost rental alerts</h2>
+    <div class="subscribe-modal__hero">
+      <img
+        class="subscribe-modal__hero-image"
+        src="assets/cr-house-logo.png"
+        alt=""
+        width="640"
+        height="200"
+        loading="lazy"
+      >
+    </div>
+    <div class="subscribe-modal__lede">
+      <p class="subscribe-modal__lede-line" data-i18n="subscribe.lede_line1">
+        Get daily alerts for schemes you can apply for now, plus those opening soon.
+      </p>
+      <p class="subscribe-modal__lede-line">
+        <span data-i18n="subscribe.lede_line2">
+          We check affordablehomes.ie, LDA, and Tuath Housing for you.
+        </span><span class="info-tip" tabindex="0" role="button" data-i18n-aria="tip.section_info" aria-label="Section information"><span class="info-tip__icon" aria-hidden="true">i</span><span class="info-tip__popup" data-i18n="tip.sources">Data comes from Affordable Homes Ireland, LDA and Tuath Housing. Other cost-rental providers, including Clúid, Respond, Circle VHA, Co-operative Housing Ireland, Oaklee, Ó Cualann and Fold Ireland, usually publish their schemes through Affordable Homes Ireland, so they are covered there rather than listed separately.</span></span>
+      </p>
+    </div>
     <form
       id="subscribe-form"
       class="subscribe-form"
@@ -1086,7 +1244,7 @@
       novalidate
     >
       <input type="hidden" name="embed" value="1">
-      <label class="subscribe-form__field" for="subscribe-email">Email</label>
+      <label class="subscribe-form__field" for="subscribe-email" data-i18n="subscribe.email">Email</label>
       <input
         class="subscribe-form__input"
         id="subscribe-email"
@@ -1098,26 +1256,26 @@
       >
       <label class="subscribe-form__consent" for="subscribe-consent">
         <input id="subscribe-consent" type="checkbox" name="consent" required>
-        <span>
+        <span data-i18n="subscribe.consent">
           I agree to receive daily Ireland Cost Rental Alerts emails. You can unsubscribe at any time.
         </span>
       </label>
-      <p class="subscribe-form__note">
+      <p class="subscribe-form__note" data-i18n="subscribe.note">
         Double opt-in: we will send a confirmation email — click the link to finish subscribing.
       </p>
       <div class="subscribe-form__actions">
-        <button class="subscribe-form__submit" type="submit">Subscribe</button>
-        <button class="subscribe-form__dismiss" type="button" id="subscribe-not-now">Not now</button>
+        <button class="subscribe-form__submit" type="submit" data-i18n="subscribe.submit">Subscribe</button>
+        <button class="subscribe-form__dismiss" type="button" id="subscribe-not-now" data-i18n="subscribe.not_now">Not now</button>
       </div>
       <p class="subscribe-form__error" id="subscribe-error" hidden></p>
     </form>
     <div class="subscribe-success" id="subscribe-success" hidden>
-      <p><strong>Almost there.</strong> Check your inbox and confirm your subscription.</p>
-      <button type="button" class="subscribe-form__submit" data-close-subscribe>Close</button>
+      <p data-i18n="subscribe.success"><strong>Almost there.</strong> Check your inbox and confirm your subscription.</p>
+      <button type="button" class="subscribe-form__submit" data-close-subscribe data-i18n="modal.close">Close</button>
     </div>
   </div>
 </div>
-  <div class="about-modal" id="about-modal" hidden aria-hidden="true">
+  <div class="about-modal hub-modal" id="about-modal" aria-hidden="true">
   <div class="about-modal__backdrop" data-close-about></div>
   <div
     class="about-modal__panel"
@@ -1125,38 +1283,105 @@
     aria-modal="true"
     aria-labelledby="about-modal-title"
   >
-    <button type="button" class="about-modal__close" data-close-about aria-label="Close">
+    <button type="button" class="about-modal__close" data-close-about data-i18n-aria="modal.close" aria-label="Close">
       &times;
     </button>
-    <h2 id="about-modal-title">About this hub</h2>
-    <p class="about-modal__lede">
-      Ireland Cost Rental Hub lists cost rental schemes you can apply for now, plus schemes
-      opening soon. Updated daily from Irish cost rental portals.
-    </p>
-    <section class="about-modal__section">
-      <h3>Data sources</h3>
-      <p>Data comes from Affordable Homes Ireland, LDA and Tuath Housing. Other cost-rental providers, including Clúid, Respond, Circle VHA, Co-operative Housing Ireland, Oaklee, Ó Cualann and Fold Ireland, usually publish their schemes through Affordable Homes Ireland, so they are covered there rather than listed separately.</p>
-    </section>
-    <section class="about-modal__section">
-      <h3>Test phase</h3>
-      <p>This app is in test phase. If you find inconsistencies, please use the Report button and we will work on fixing the problem.</p>
-    </section>
-    <section class="about-modal__section">
-      <h3>Help improve this</h3>
-      <ul class="about-modal__list">
-        <li>Wrong details on a scheme? Use <strong>Report</strong> on that scheme&apos;s card.</li>
-        <li>Another problem? <a href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;amp;body=Scheme%20name%3A%20%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A">Send a report</a>.</li>
-        <li>
-          Want to contribute?
-          <a href="mailto:costrentalhub@gmail.com">costrentalhub@gmail.com</a>.
-        </li>
-      </ul>
-    </section>
-    <button type="button" class="about-modal__done" data-close-about>Close</button>
+    <h2 id="about-modal-title" data-i18n="about.title">About Ireland Cost Rental Hub</h2>
+    <div class="about-modal__body">
+      <p class="about-modal__lede" data-i18n="about.lede">
+        A daily dashboard for cost rental housing in Ireland. See what you can apply for
+        today and what is opening soon, without checking each portal separately.
+      </p>
+      <section class="about-modal__section">
+        <h3 data-i18n="about.how.title">How it works</h3>
+        <p data-i18n="about.how.body">
+          We check affordablehomes.ie, LDA and Tuath Housing every morning, merge the
+          results, and publish updates here and by email.
+        </p>
+      </section>
+      <section class="about-modal__section">
+        <h3 data-i18n="about.sources.title">Data sources</h3>
+        <p data-i18n="tip.sources">Data comes from Affordable Homes Ireland, LDA and Tuath Housing. Other cost-rental providers, including Clúid, Respond, Circle VHA, Co-operative Housing Ireland, Oaklee, Ó Cualann and Fold Ireland, usually publish their schemes through Affordable Homes Ireland, so they are covered there rather than listed separately.</p>
+      </section>
+      <section class="about-modal__section">
+        <h3 data-i18n="about.email.title">Email alerts</h3>
+        <p>
+          <span data-i18n="about.email.body">Get one morning email with apply-now and opening-soon schemes.</span>
+          <button type="button" class="about-modal__inline-link" data-open-subscribe data-i18n="about.email.link">
+            Open email signup
+          </button>.
+        </p>
+      </section>
+      <section class="about-modal__section">
+        <h3 data-i18n="about.test.title">Test phase</h3>
+        <p data-i18n="about.test.body">This app is in test phase. If you find inconsistencies, please use the Report button and we will work on fixing the problem.</p>
+      </section>
+      <section class="about-modal__section">
+        <h3 data-i18n="about.help.title">Help improve this</h3>
+        <ul class="about-modal__list">
+          <li data-i18n="about.help.scheme">Wrong details on a scheme? Use <strong>Report</strong> on that scheme&apos;s card.</li>
+          <li>
+            <span data-i18n="about.help.other">Another problem?</span>
+            <a href="mailto:costrentalhub@gmail.com?subject=Ireland%20Cost%20Rental%20Hub%20%E2%80%94%20issue%20report&amp;body=Scheme%20name%3A%20%0AWhat%20is%20wrong%20%28broken%20link%2C%20wrong%20dates%2C%20etc.%29%3A%0A%0APage%20URL%3A%20https%3A//costrentalhub.github.io/%0A" data-i18n="about.help.report">Send a report</a>.
+          </li>
+          <li>
+            <span data-i18n="about.help.contribute">Want to contribute?</span>
+            <a href="mailto:costrentalhub@gmail.com">costrentalhub@gmail.com</a>.
+          </li>
+        </ul>
+      </section>
+    </div>
+    <button type="button" class="about-modal__done" data-close-about data-i18n="modal.close">Close</button>
+  </div>
+</div>
+  <div class="cost-rental-modal hub-modal" id="cost-rental-modal" aria-hidden="true">
+  <div class="cost-rental-modal__backdrop" data-close-cost-rental></div>
+  <div
+    class="cost-rental-modal__panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="cost-rental-modal-title"
+  >
+    <button type="button" class="cost-rental-modal__close" data-close-cost-rental data-i18n-aria="modal.close" aria-label="Close">
+      &times;
+    </button>
+    <h2 id="cost-rental-modal-title" data-i18n="cost_rental.title">What is cost rental?</h2>
+    <div class="cost-rental-modal__body">
+      <p class="cost-rental-modal__lede" data-i18n="cost_rental.lede">
+        Cost rental is a form of affordable housing in Ireland where rent is set below
+        market rates and linked to your household income.
+      </p>
+      <section class="cost-rental-modal__section">
+        <h3 data-i18n="cost_rental.who.title">Who provides it</h3>
+        <p data-i18n="cost_rental.who.body">
+          Schemes are run by approved Irish housing bodies and public agencies, including
+          Clúid, LDA and Tuath Housing. Many others publish through Affordable Homes Ireland.
+        </p>
+      </section>
+      <section class="cost-rental-modal__section">
+        <h3 data-i18n="cost_rental.diff.title">How it differs</h3>
+        <p data-i18n="cost_rental.diff.body">
+          Unlike HAP or the Rental Accommodation Scheme, cost rental is a tenancy in a
+          new affordable home — not a subsidy for a home you find yourself. It is also
+          different from traditional social housing queues, though eligibility can overlap.
+        </p>
+      </section>
+      <section class="cost-rental-modal__section">
+        <h3 data-i18n="cost_rental.apply.title">How to apply</h3>
+        <p data-i18n="cost_rental.apply.body">
+          When a scheme is open, apply through the provider&apos;s portal — affordablehomes.ie,
+          LDA or Tuath Housing. This hub shows what is open now and opening soon so you
+          do not miss a window.
+        </p>
+      </section>
+    </div>
+    <button type="button" class="cost-rental-modal__done" data-close-cost-rental data-i18n="modal.close">Close</button>
   </div>
 </div>
 
   <script>
+    const I18N = {"hub.title": {"en": "Ireland Cost Rental Hub", "pt": "Ireland Cost Rental Hub"}, "hero.tagline": {"en": "Cost rental schemes in Ireland — apply now and opening soon. Updated daily from cost rental portals", "pt": "Esquemas de cost rental na Irlanda — candidaturas abertas e em breve. Atualizado diariamente a partir dos portais de cost rental"}, "tip.sources": {"en": "Data comes from Affordable Homes Ireland, LDA and Tuath Housing. Other cost-rental providers, including Clúid, Respond, Circle VHA, Co-operative Housing Ireland, Oaklee, Ó Cualann and Fold Ireland, usually publish their schemes through Affordable Homes Ireland, so they are covered there rather than listed separately.", "pt": "Os dados vêm da Affordable Homes Ireland, LDA e Tuath Housing. Outros fornecedores de cost rental, incluindo Clúid, Respond, Circle VHA, Co-operative Housing Ireland, Oaklee, Ó Cualann e Fold Ireland, costumam publicar os esquemas pela Affordable Homes Ireland, por isso aparecem lá em vez de serem listados separadamente."}, "hero.updated": {"en": "Updated", "pt": "Atualizado"}, "summary.apply_now": {"en": "🟢 Apply now", "pt": "🟢 Candidatar agora"}, "summary.opening_soon": {"en": "🔵 Opening soon", "pt": "🔵 Em breve"}, "summary.label": {"en": "Scheme summary", "pt": "Resumo dos esquemas"}, "action.hub_actions": {"en": "Hub actions", "pt": "Ações do hub"}, "action.email": {"en": "Email", "pt": "Email"}, "action.report": {"en": "Report", "pt": "Reportar"}, "action.about": {"en": "About", "pt": "Sobre"}, "action.cost_rental": {"en": "Cost rental", "pt": "Cost rental"}, "view.layout": {"en": "Layout", "pt": "Layout"}, "view.table": {"en": "Table", "pt": "Tabela"}, "view.cards": {"en": "Cards", "pt": "Cards"}, "section.apply_now.title": {"en": "🟢 Apply now", "pt": "🟢 Candidatar agora"}, "section.apply_now.tip": {"en": "Open application windows. Schemes with a close date are sorted first so the earliest deadlines are easiest to spot. This app is in test phase. If you find inconsistencies, please use the Report button and we will work on fixing the problem.", "pt": "Janelas de candidatura abertas. Esquemas com data de encerramento aparecem primeiro para facilitar ver os prazos mais urgentes. Esta app está em fase de testes. Se encontrar inconsistências, use o botão Reportar e vamos corrigir o problema."}, "section.apply_now.empty": {"en": "No schemes are open for applications right now.", "pt": "Nenhum esquema está aberto para candidaturas neste momento."}, "section.opening_soon.title": {"en": "🔵 Opening soon", "pt": "🔵 Em breve"}, "section.opening_soon.tip": {"en": "Not yet open for applications. Sorted by opening date, soonest first. This app is in test phase. If you find inconsistencies, please use the Report button and we will work on fixing the problem.", "pt": "Ainda não abertos para candidaturas. Ordenados por data de abertura, mais próximos primeiro. Esta app está em fase de testes. Se encontrar inconsistências, use o botão Reportar e vamos corrigir o problema."}, "section.opening_soon.empty": {"en": "No schemes are opening soon right now.", "pt": "Nenhum esquema abre em breve neste momento."}, "count.scheme": {"en": "scheme", "pt": "esquema"}, "count.schemes": {"en": "schemes", "pt": "esquemas"}, "table.scheme": {"en": "Scheme", "pt": "Esquema"}, "table.location": {"en": "📍 Location", "pt": "📍 Localização"}, "table.price": {"en": "💰 Price", "pt": "💰 Preço"}, "table.beds": {"en": "🛏️ Beds", "pt": "🛏️ Quartos"}, "table.homes": {"en": "🏠 Homes", "pt": "🏠 Casas"}, "table.income": {"en": "💶 Income", "pt": "💶 Rendimento"}, "table.opens": {"en": "📅 Opens", "pt": "📅 Abre"}, "table.closes": {"en": "⏰ Closes", "pt": "⏰ Fecha"}, "table.apply_now": {"en": "Apply now", "pt": "Candidatar"}, "detail.location": {"en": "📍 Location", "pt": "📍 Localização"}, "detail.price": {"en": "💰 Price from", "pt": "💰 Preço desde"}, "detail.homes": {"en": "🏠 Homes", "pt": "🏠 Casas"}, "detail.beds": {"en": "🛏️ Bedrooms", "pt": "🛏️ Quartos"}, "detail.income": {"en": "💶 Income", "pt": "💶 Rendimento"}, "detail.opens": {"en": "📅 Opens", "pt": "📅 Abre"}, "detail.closes": {"en": "⏰ Closes", "pt": "⏰ Fecha"}, "value.not_listed": {"en": "Not listed", "pt": "Não indicado"}, "value.tbc": {"en": "TBC", "pt": "A confirmar"}, "value.unnamed": {"en": "Unnamed scheme", "pt": "Esquema sem nome"}, "value.income_from": {"en": "From EUR", "pt": "Desde EUR"}, "value.income_up_to": {"en": "Up to EUR", "pt": "Até EUR"}, "status.open": {"en": "Open", "pt": "Aberto"}, "status.opening_soon": {"en": "Opening Soon", "pt": "Em breve"}, "report": {"en": "Report", "pt": "Reportar"}, "tip.section_info": {"en": "Section information", "pt": "Informação da secção"}, "lang.label": {"en": "Language", "pt": "Idioma"}, "lang.en": {"en": "English", "pt": "Inglês"}, "lang.pt": {"en": "Portuguese", "pt": "Português"}, "modal.close": {"en": "Close", "pt": "Fechar"}, "subscribe.title": {"en": "Get cost rental alerts", "pt": "Receber alertas de cost rental"}, "subscribe.lede_line1": {"en": "Get daily alerts for schemes you can apply for now, plus those opening soon.", "pt": "Alertas diários com esquemas para candidatar agora e os que abrem em breve."}, "subscribe.lede_line2": {"en": "We check affordablehomes.ie, LDA, and Tuath Housing for you.", "pt": "Verificamos affordablehomes.ie, LDA e Tuath Housing por si."}, "subscribe.email": {"en": "Email", "pt": "Email"}, "subscribe.consent": {"en": "I agree to receive daily Ireland Cost Rental Alerts emails. You can unsubscribe at any time.", "pt": "Aceito receber emails diários do Ireland Cost Rental Alerts. Pode cancelar a subscrição a qualquer momento."}, "subscribe.note": {"en": "Double opt-in: we will send a confirmation email — click the link to finish subscribing.", "pt": "Confirmação dupla: enviaremos um email de confirmação — clique no link para concluir a subscrição."}, "subscribe.submit": {"en": "Subscribe", "pt": "Subscrever"}, "subscribe.not_now": {"en": "Not now", "pt": "Agora não"}, "subscribe.success": {"en": "Almost there. Check your inbox and confirm your subscription.", "pt": "Quase lá. Verifique a caixa de entrada e confirme a subscrição."}, "subscribe.error": {"en": "Could not subscribe right now. Please try again.", "pt": "Não foi possível subscrever agora. Tente novamente."}, "about.title": {"en": "About Ireland Cost Rental Hub", "pt": "Sobre o Ireland Cost Rental Hub"}, "about.lede": {"en": "A daily dashboard for cost rental housing in Ireland. See what you can apply for today and what is opening soon, without checking each portal separately.", "pt": "Um painel diário de habitação cost rental na Irlanda. Veja o que pode candidatar-se hoje e o que abre em breve, sem consultar cada portal separadamente."}, "about.how.title": {"en": "How it works", "pt": "Como funciona"}, "about.how.body": {"en": "We check affordablehomes.ie, LDA and Tuath Housing every morning, merge the results, and publish updates here and by email.", "pt": "Verificamos affordablehomes.ie, LDA e Tuath Housing todas as manhãs, unimos os resultados e publicamos atualizações aqui e por email."}, "about.sources.title": {"en": "Data sources", "pt": "Fontes de dados"}, "about.email.title": {"en": "Email alerts", "pt": "Alertas por email"}, "about.email.body": {"en": "Get one morning email with apply-now and opening-soon schemes.", "pt": "Receba um email de manhã com esquemas abertos e em breve."}, "about.email.link": {"en": "Open email signup", "pt": "Abrir subscrição por email"}, "about.test.title": {"en": "Test phase", "pt": "Fase de testes"}, "about.test.body": {"en": "This app is in test phase. If you find inconsistencies, please use the Report button and we will work on fixing the problem.", "pt": "Esta app está em fase de testes. Se encontrar inconsistências, use o botão Reportar e vamos corrigir o problema."}, "about.help.title": {"en": "Help improve this", "pt": "Ajude a melhorar"}, "about.help.scheme": {"en": "Wrong details on a scheme? Use Report on that scheme's card.", "pt": "Detalhes errados num esquema? Use Reportar no card desse esquema."}, "about.help.report": {"en": "Send a report", "pt": "Enviar reporte"}, "about.help.other": {"en": "Another problem?", "pt": "Outro problema?"}, "about.help.contribute": {"en": "Want to contribute?", "pt": "Quer contribuir?"}, "cost_rental.title": {"en": "What is cost rental?", "pt": "O que é cost rental?"}, "cost_rental.lede": {"en": "Cost rental is a form of affordable housing in Ireland where rent is set below market rates and linked to your household income.", "pt": "Cost rental é uma forma de habitação acessível na Irlanda em que a renda fica abaixo do mercado e ligada ao rendimento do agregado familiar."}, "cost_rental.who.title": {"en": "Who provides it", "pt": "Quem fornece"}, "cost_rental.who.body": {"en": "Schemes are run by approved Irish housing bodies and public agencies, including Clúid, LDA and Tuath Housing. Many others publish through Affordable Homes Ireland.", "pt": "Os esquemas são geridos por entidades de habitação irlandesas aprovadas e agências públicas, incluindo Clúid, LDA e Tuath Housing. Muitos outros publicam pela Affordable Homes Ireland."}, "cost_rental.diff.title": {"en": "How it differs", "pt": "Em que difere"}, "cost_rental.diff.body": {"en": "Unlike HAP or the Rental Accommodation Scheme, cost rental is a tenancy in a new affordable home — not a subsidy for a home you find yourself. It is also different from traditional social housing queues, though eligibility can overlap.", "pt": "Ao contrário do HAP ou do Rental Accommodation Scheme, cost rental é um arrendamento numa casa nova acessível — não um subsídio para uma casa que encontra por conta própria. Também difere das filas tradicionais de habitação social, embora a elegibilidade possa sobrepor-se."}, "cost_rental.apply.title": {"en": "How to apply", "pt": "Como candidatar-se"}, "cost_rental.apply.body": {"en": "When a scheme is open, apply through the provider's portal — affordablehomes.ie, LDA or Tuath Housing. This hub shows what is open now and opening soon so you do not miss a window.", "pt": "Quando um esquema está aberto, candidate-se no portal do fornecedor — affordablehomes.ie, LDA ou Tuath Housing. Este hub mostra o que está aberto agora e em breve para não perder o prazo."}};
+    const LANGUAGE_STORAGE_KEY = 'crh_hub_lang';
     const SUBSCRIBE_DISMISS_KEY = 'crh_email_alerts_dismissed';
     const VIEW_MODE_STORAGE_KEY = 'crh_scheme_view';
     const DESKTOP_LAYOUT = window.matchMedia("(min-width: 960px)");
@@ -1166,35 +1391,58 @@
     const subscribeError = document.getElementById("subscribe-error");
     const subscribeNotNow = document.getElementById("subscribe-not-now");
     const aboutModal = document.getElementById("about-modal");
+    const costRentalModal = document.getElementById("cost-rental-modal");
+    const hubModals = [subscribeModal, aboutModal, costRentalModal].filter(Boolean);
+
+    function isModalOpen(modal) {
+      return Boolean(modal && modal.classList.contains("is-open"));
+    }
+
+    function openModal(modal) {
+      if (!modal) return;
+      hubModals.forEach((item) => {
+        if (item !== modal) closeModal(item);
+      });
+      modal.classList.add("is-open");
+      modal.setAttribute("aria-hidden", "false");
+      document.body.classList.add("hub-modal-open");
+      const focusTarget = modal.querySelector(
+        "input, button:not(.subscribe-modal__close):not(.about-modal__close):not(.cost-rental-modal__close), [href]"
+      );
+      if (focusTarget && focusTarget.focus) focusTarget.focus();
+    }
+
+    function closeModal(modal) {
+      if (!modal) return;
+      modal.classList.remove("is-open");
+      modal.setAttribute("aria-hidden", "true");
+      if (!hubModals.some(isModalOpen)) {
+        document.body.classList.remove("hub-modal-open");
+      }
+    }
 
     function openSubscribeModal() {
-      subscribeModal.hidden = false;
-      subscribeModal.setAttribute("aria-hidden", "false");
-      document.body.classList.add("hub-modal-open");
-      const emailInput = document.getElementById("subscribe-email");
-      if (emailInput) emailInput.focus();
+      openModal(subscribeModal);
     }
 
     function closeSubscribeModal() {
-      subscribeModal.hidden = true;
-      subscribeModal.setAttribute("aria-hidden", "true");
-      if (aboutModal.hidden) {
-        document.body.classList.remove("hub-modal-open");
-      }
+      closeModal(subscribeModal);
     }
 
     function openAboutModal() {
-      aboutModal.hidden = false;
-      aboutModal.setAttribute("aria-hidden", "false");
-      document.body.classList.add("hub-modal-open");
+      openModal(aboutModal);
     }
 
     function closeAboutModal() {
-      aboutModal.hidden = true;
-      aboutModal.setAttribute("aria-hidden", "true");
-      if (subscribeModal.hidden) {
-        document.body.classList.remove("hub-modal-open");
-      }
+      closeModal(aboutModal);
+    }
+
+    function openCostRentalModal() {
+      openModal(costRentalModal);
+    }
+
+    function closeCostRentalModal() {
+      closeModal(costRentalModal);
     }
 
     function dismissSubscribePrompt() {
@@ -1209,6 +1457,8 @@
     document.querySelectorAll("[data-open-subscribe]").forEach((button) => {
       button.addEventListener("click", (event) => {
         event.preventDefault();
+        closeAboutModal();
+        closeCostRentalModal();
         openSubscribeModal();
       });
     });
@@ -1220,6 +1470,13 @@
       });
     });
 
+    document.querySelectorAll("[data-open-cost-rental]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        openCostRentalModal();
+      });
+    });
+
     document.querySelectorAll("[data-close-subscribe]").forEach((button) => {
       button.addEventListener("click", closeSubscribeModal);
     });
@@ -1228,45 +1485,58 @@
       button.addEventListener("click", closeAboutModal);
     });
 
-    subscribeNotNow.addEventListener("click", dismissSubscribePrompt);
-
-    subscribeForm.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      subscribeError.hidden = true;
-      subscribeError.textContent = "";
-
-      if (!subscribeForm.reportValidity()) {
-        return;
-      }
-
-      const submitButton = subscribeForm.querySelector('button[type="submit"]');
-      const email = new FormData(subscribeForm).get("email");
-      submitButton.disabled = true;
-
-      try {
-        await fetch(subscribeForm.action, {
-          method: "POST",
-          body: new URLSearchParams({ email: String(email || ""), embed: "1" }),
-          mode: "no-cors",
-        });
-        subscribeForm.hidden = true;
-        subscribeSuccess.hidden = false;
-        try {
-          localStorage.setItem(SUBSCRIBE_DISMISS_KEY, "1");
-        } catch (storageError) {
-          // Ignore private browsing storage errors.
-        }
-      } catch (error) {
-        subscribeError.hidden = false;
-        subscribeError.textContent = "Could not subscribe right now. Please try again.";
-        submitButton.disabled = false;
-      }
+    document.querySelectorAll("[data-close-cost-rental]").forEach((button) => {
+      button.addEventListener("click", closeCostRentalModal);
     });
+
+    if (subscribeNotNow) {
+      subscribeNotNow.addEventListener("click", dismissSubscribePrompt);
+    }
+
+    if (subscribeForm) {
+      subscribeForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (subscribeError) {
+          subscribeError.hidden = true;
+          subscribeError.textContent = "";
+        }
+
+        if (!subscribeForm.reportValidity()) {
+          return;
+        }
+
+        const submitButton = subscribeForm.querySelector('button[type="submit"]');
+        const email = new FormData(subscribeForm).get("email");
+        if (submitButton) submitButton.disabled = true;
+
+        try {
+          await fetch(subscribeForm.action, {
+            method: "POST",
+            body: new URLSearchParams({ email: String(email || ""), embed: "1" }),
+            mode: "no-cors",
+          });
+          subscribeForm.hidden = true;
+          if (subscribeSuccess) subscribeSuccess.hidden = false;
+          try {
+            localStorage.setItem(SUBSCRIBE_DISMISS_KEY, "1");
+          } catch (storageError) {
+            // Ignore private browsing storage errors.
+          }
+        } catch (error) {
+          if (subscribeError) {
+            subscribeError.hidden = false;
+            subscribeError.textContent = t("subscribe.error", document.documentElement.lang === "pt" ? "pt" : "en");
+          }
+          if (submitButton) submitButton.disabled = false;
+        }
+      });
+    }
 
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
-        if (!subscribeModal.hidden) closeSubscribeModal();
-        if (!aboutModal.hidden) closeAboutModal();
+        if (isModalOpen(subscribeModal)) closeSubscribeModal();
+        if (isModalOpen(aboutModal)) closeAboutModal();
+        if (isModalOpen(costRentalModal)) closeCostRentalModal();
       }
     });
 
@@ -1312,6 +1582,72 @@
     }
 
     initViewToggles();
+
+    function t(key, lang) {
+      return I18N[key]?.[lang] ?? I18N[key]?.en ?? "";
+    }
+
+    function formatSchemeCount(count, lang) {
+      const label = count === 1 ? t("count.scheme", lang) : t("count.schemes", lang);
+      return `${count} ${label}`;
+    }
+
+    function applyLanguage(lang) {
+      const language = lang === "pt" ? "pt" : "en";
+      document.documentElement.lang = language;
+      document.querySelectorAll("[data-i18n]").forEach((element) => {
+        const key = element.dataset.i18n;
+        const value = t(key, language);
+        if (value) element.textContent = value;
+      });
+      document.querySelectorAll("[data-i18n-aria]").forEach((element) => {
+        const key = element.dataset.i18nAria;
+        const value = t(key, language);
+        if (value) element.setAttribute("aria-label", value);
+      });
+      document.querySelectorAll("[data-i18n-title]").forEach((element) => {
+        const key = element.dataset.i18nTitle;
+        const value = t(key, language);
+        if (value) element.setAttribute("title", value);
+      });
+      document.querySelectorAll("[data-scheme-count]").forEach((element) => {
+        const count = Number.parseInt(element.dataset.schemeCount || "0", 10);
+        element.textContent = formatSchemeCount(count, language);
+      });
+      const updatedLabel = document.getElementById("updated-label");
+      if (updatedLabel) {
+        const timestamp = updatedLabel.dataset.timestamp || "";
+        updatedLabel.textContent = `${t("hero.updated", language)} ${timestamp}`.trim();
+      }
+      document.querySelectorAll("[data-lang]").forEach((button) => {
+        const active = button.dataset.lang === language;
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+      try {
+        localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+      } catch (error) {
+        // Ignore private browsing storage errors.
+      }
+    }
+
+    function initLanguageToggle() {
+      let language = "en";
+      try {
+        const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+        if (stored === "en" || stored === "pt") language = stored;
+      } catch (error) {
+        // Ignore private browsing storage errors.
+      }
+      applyLanguage(language);
+      document.querySelectorAll("[data-lang]").forEach((button) => {
+        button.addEventListener("click", () => {
+          applyLanguage(button.dataset.lang);
+        });
+      });
+    }
+
+    initLanguageToggle();
   </script>
 </body>
 </html>

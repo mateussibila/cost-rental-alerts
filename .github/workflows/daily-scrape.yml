@@ -65,7 +65,7 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: update listings data and dashboard"
-          file_pattern: data/listings.db data/listings-export.csv data/listings-open.csv site/index.html
+          file_pattern: data/listings.db data/listings-export.csv data/listings-open.csv site/index.html site/assets/cr-house-logo.png
 
       - name: Configure GitHub Pages
         id: configure_pages
