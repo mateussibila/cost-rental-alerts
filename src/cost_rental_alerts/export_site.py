@@ -485,9 +485,13 @@ def render_hub_actions(*, issue_href: str) -> str:
   <button type="button" class="hub-action hub-action--primary" data-open-subscribe data-i18n="action.email">
     Email
   </button>
-  <a class="hub-action" data-i18n="action.report" href="{escape(issue_href, quote=True)}">Report</a>
-  <button type="button" class="hub-action" data-open-about data-i18n="action.about">About</button>
-  <button type="button" class="hub-action" data-open-cost-rental data-i18n="action.cost_rental">Cost rental</button>
+  <div class="hub-actions__chips">
+    <a class="hub-action hub-action--chip" data-i18n="action.report" href="{escape(issue_href, quote=True)}">Report</a>
+    <button type="button" class="hub-action hub-action--chip" data-open-about data-i18n="action.about">About</button>
+    <button type="button" class="hub-action hub-action--chip hub-action--chip-tight" data-open-cost-rental data-i18n="action.cost_rental">
+      What is cost rental?
+    </button>
+  </div>
 </nav>
 """.strip()
 
@@ -800,7 +804,8 @@ def render_html(
     generated = generated_at or datetime.now(TZ)
     apply_now = apply_now_schemes(schemes)
     opening_soon = opening_soon_schemes(schemes)
-    generated_label = generated.strftime("%d %b %Y %H:%M %Z")
+    generated_date = generated.strftime("%d %b %Y")
+    generated_time = generated.strftime("%H:%M %Z")
     issue_href = report_issue_href()
 
     return f"""<!doctype html>
@@ -841,11 +846,17 @@ def render_html(
       padding: 40px 0 64px;
     }}
     .hero {{
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 32px;
-      align-items: end;
-      margin-bottom: 28px;
+      margin-bottom: 0;
+    }}
+    .hero-top {{
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }}
+    .hero-top .lang-toggle {{
+      flex-shrink: 0;
     }}
     .hero h1 {{
       margin: 0;
@@ -857,7 +868,8 @@ def render_html(
       display: flex;
       align-items: center;
       gap: clamp(12px, 2vw, 18px);
-      margin-bottom: 10px;
+      min-width: 0;
+      flex: 1;
     }}
     .hero-logo {{
       width: clamp(52px, 8vw, 72px);
@@ -871,13 +883,14 @@ def render_html(
       font-size: 1.05rem;
     }}
     .updated {{
-      padding: 14px 16px;
+      padding: 10px 12px;
       border: 1px solid var(--line);
-      border-radius: 18px;
+      border-radius: 14px;
       background: rgba(255, 255, 255, 0.72);
       color: var(--muted);
       white-space: nowrap;
-      box-shadow: var(--shadow);
+      font-size: 0.84rem;
+      box-shadow: 0 8px 24px rgba(16, 32, 51, 0.05);
     }}
     .hero-meta {{
       display: flex;
@@ -913,9 +926,29 @@ def render_html(
     }}
     .summary {{
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
       gap: 16px;
-      margin: 30px 0;
+      align-items: stretch;
+      margin: 24px 0 30px;
+    }}
+    .summary .updated {{
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      text-align: center;
+      min-height: 100%;
+      white-space: normal;
+      line-height: 1.3;
+    }}
+    .updated__label {{
+      font-weight: 700;
+      color: var(--text);
+    }}
+    .updated__date,
+    .updated__time {{
+      display: block;
     }}
     .summary-card {{
       padding: 22px;
@@ -943,7 +976,12 @@ def render_html(
     .hub-actions {{
       margin: 26px 0;
       display: flex;
-      gap: 10px;
+      flex-direction: column;
+      gap: 8px;
+    }}
+    .hub-actions__chips {{
+      display: flex;
+      gap: 8px;
       flex-wrap: wrap;
     }}
     .hub-action {{
@@ -963,6 +1001,21 @@ def render_html(
       cursor: pointer;
       box-shadow: var(--shadow);
     }}
+    .hub-action--chip {{
+      min-height: 38px;
+      padding: 0 12px;
+      border-color: #e8eef5;
+      background: #f8fafc;
+      box-shadow: none;
+      font-size: 0.8rem;
+      font-weight: 650;
+    }}
+    .hub-action--chip-tight {{
+      font-size: 0.64rem;
+      line-height: 1.15;
+      padding: 0 8px;
+      letter-spacing: -0.01em;
+    }}
     .hub-action:hover {{
       border-color: #cbd5e1;
     }}
@@ -970,6 +1023,7 @@ def render_html(
       background: var(--brand);
       border-color: var(--brand);
       color: #fff;
+      box-shadow: 0 10px 24px rgba(20, 86, 240, 0.18);
     }}
     .hub-action--primary:hover {{
       background: var(--brand-dark);
@@ -1183,6 +1237,45 @@ def render_html(
       clip: rect(0, 0, 0, 0);
       white-space: nowrap;
       border: 0;
+    }}
+    @media (max-width: 959px) {{
+      .section-heading {{
+        display: flex;
+        flex-direction: row;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 10px;
+      }}
+      .section-heading > div:first-child {{
+        min-width: 0;
+        flex: 1 1 auto;
+      }}
+      .view-toggle {{
+        display: inline-flex;
+        flex-shrink: 0;
+      }}
+      .scheme-section:not([data-view="cards"]) .scheme-grid--cards {{
+        display: none;
+      }}
+      .scheme-section:not([data-view="cards"]) .scheme-table-wrap {{
+        display: block;
+      }}
+      .scheme-section[data-view="cards"] .scheme-grid--cards {{
+        display: grid;
+      }}
+      .scheme-section[data-view="cards"] .scheme-table-wrap {{
+        display: none;
+      }}
+      .scheme-table {{
+        font-size: 0.78rem;
+      }}
+      .scheme-table th,
+      .scheme-table td {{
+        padding: 10px 8px;
+      }}
+      .table-scheme__address {{
+        max-width: 140px;
+      }}
     }}
     @media (min-width: 960px) {{
       .section-heading {{
@@ -1590,14 +1683,40 @@ def render_html(
       line-height: 1.45;
     }}
     @media (max-width: 820px) {{
-      .hero,
-      .section-heading {{
-        grid-template-columns: 1fr;
+      .hero {{
+        margin-bottom: 0;
       }}
-      .updated {{ white-space: normal; }}
+      .hero h1 {{
+        font-size: clamp(1.28rem, 5.2vw, 1.75rem);
+        line-height: 1.05;
+        text-align: left;
+      }}
+      .hero-logo {{
+        width: 42px;
+        height: 42px;
+      }}
+      .hero p {{
+        font-size: 0.92rem;
+      }}
+      .lang-toggle__btn {{
+        min-width: 38px;
+        min-height: 34px;
+        padding: 0 8px;
+        font-size: 1rem;
+      }}
+      .updated {{
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 9px;
+        border-radius: 10px;
+        font-size: 0.72rem;
+        white-space: normal;
+        box-shadow: none;
+      }}
       .summary {{
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10px;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+        gap: 8px;
+        margin: 14px 0 18px;
       }}
       .summary-card {{
         padding: 16px;
@@ -1611,14 +1730,28 @@ def render_html(
         font-size: 2.2rem;
       }}
       .hub-actions {{
+        margin: 14px 0 18px;
+        gap: 6px;
+      }}
+      .hub-actions__chips {{
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
       }}
       .hub-action--primary {{
-        grid-column: 1 / -1;
+        min-height: 40px;
+        font-size: 0.88rem;
+        box-shadow: 0 8px 18px rgba(20, 86, 240, 0.14);
       }}
-      .hub-action {{
+      .hub-action--chip {{
         width: 100%;
+        min-height: 34px;
+        padding: 0 6px;
+        font-size: 0.74rem;
+      }}
+      .hub-action--chip-tight {{
+        font-size: 0.58rem;
+        padding: 0 4px;
       }}
     }}
     @media (max-width: 460px) {{
@@ -1670,33 +1803,35 @@ def render_html(
 <body>
   <main class="page">
     <header class="hero">
-      <div>
-        <div class="hero-brand">
-          <img
-            class="hero-logo"
-            src="{escape(HUB_LOGO_URL, quote=True)}"
-            alt=""
-            width="72"
-            height="72"
-          >
-          <h1 data-i18n="hub.title">{escape(HUB_TITLE)}</h1>
+      <div class="hero-main">
+        <div class="hero-top">
+          <div class="hero-brand">
+            <img
+              class="hero-logo"
+              src="{escape(HUB_LOGO_URL, quote=True)}"
+              alt=""
+              width="72"
+              height="72"
+            >
+            <h1 data-i18n="hub.title">{escape(HUB_TITLE)}</h1>
+          </div>
+          {render_lang_toggle()}
         </div>
         <p>
           <span data-i18n="hero.tagline">Cost rental schemes in Ireland — apply now and opening soon. Updated daily from cost rental portals</span>
           {render_info_tip("tip.sources")}
         </p>
       </div>
-      <div class="hero-meta">
-        {render_lang_toggle()}
-        <div class="updated" id="updated-label" data-timestamp="{escape(generated_label, quote=True)}">
-          <span data-i18n="hero.updated">Updated</span> {escape(generated_label)}
-        </div>
-      </div>
     </header>
 
     <section class="summary" data-i18n-aria="summary.label" aria-label="Scheme summary">
       <div class="summary-card summary-card--apply"><span data-i18n="summary.apply_now">🟢 Apply now</span><strong>{len(apply_now)}</strong></div>
       <div class="summary-card summary-card--opening"><span data-i18n="summary.opening_soon">🔵 Opening soon</span><strong>{len(opening_soon)}</strong></div>
+      <div class="updated" id="updated-label">
+        <span class="updated__label" data-i18n="hero.updated">Updated</span>
+        <span class="updated__date">{escape(generated_date)}</span>
+        <span class="updated__time">{escape(generated_time)}</span>
+      </div>
     </section>
 
     {render_hub_actions(issue_href=issue_href)}
@@ -1895,17 +2030,19 @@ def render_html(
           button.setAttribute("aria-pressed", active ? "true" : "false");
         }});
       }});
-      if (DESKTOP_LAYOUT.matches) {{
-        try {{
-          localStorage.setItem(VIEW_MODE_STORAGE_KEY, mode);
-        }} catch (error) {{
-          // Ignore private browsing storage errors.
-        }}
+      try {{
+        localStorage.setItem(VIEW_MODE_STORAGE_KEY, mode);
+      }} catch (error) {{
+        // Ignore private browsing storage errors.
       }}
     }}
 
+    function defaultViewMode() {{
+      return DESKTOP_LAYOUT.matches ? "table" : "cards";
+    }}
+
     function initViewToggles() {{
-      let mode = "table";
+      let mode = defaultViewMode();
       try {{
         const stored = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
         if (stored === "table" || stored === "cards") {{
@@ -1922,6 +2059,16 @@ def render_html(
           if (!button) return;
           applyViewMode(button.dataset.viewMode);
         }});
+      }});
+
+      DESKTOP_LAYOUT.addEventListener("change", () => {{
+        try {{
+          if (!localStorage.getItem(VIEW_MODE_STORAGE_KEY)) {{
+            applyViewMode(defaultViewMode());
+          }}
+        }} catch (error) {{
+          applyViewMode(defaultViewMode());
+        }}
       }});
     }}
 
@@ -1960,8 +2107,8 @@ def render_html(
       }});
       const updatedLabel = document.getElementById("updated-label");
       if (updatedLabel) {{
-        const timestamp = updatedLabel.dataset.timestamp || "";
-        updatedLabel.textContent = `${{t("hero.updated", language)}} ${{timestamp}}`.trim();
+        const labelEl = updatedLabel.querySelector(".updated__label");
+        if (labelEl) labelEl.textContent = t("hero.updated", language);
       }}
       document.querySelectorAll("[data-lang]").forEach((button) => {{
         const active = button.dataset.lang === language;

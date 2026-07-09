@@ -306,14 +306,15 @@ class ExportSiteTests(unittest.TestCase):
             html,
         )
 
-    def test_mobile_hub_actions_use_three_columns(self):
+    def test_mobile_hub_actions_use_three_chip_columns(self):
         html = render_html([])
 
         self.assertIn("grid-template-columns: repeat(2, minmax(0, 1fr));", html)
         self.assertIn(".summary-card {\n        padding: 16px;", html)
-        self.assertIn("grid-template-columns: repeat(2, minmax(0, 1fr));", html)
-        self.assertIn(".hub-action--primary {\n        grid-column: 1 / -1;", html)
+        self.assertIn("hub-actions__chips", html)
+        self.assertIn("grid-template-columns: repeat(3, minmax(0, 1fr));", html)
         self.assertIn('class="hub-actions"', html)
+        self.assertIn("hub-action--chip-tight", html)
 
     def test_hub_actions_replace_toolbar(self):
         html = render_html([])
@@ -372,6 +373,8 @@ class ExportSiteTests(unittest.TestCase):
         self.assertIn('class="hero-logo"', html)
         self.assertIn(HUB_LOGO_URL, html)
         self.assertIn('class="hero-brand"', html)
+        self.assertIn('class="hero-top"', html)
+        self.assertIn('class="lang-toggle"', html)
 
     def test_desktop_view_toggle_defaults_to_table(self):
         html = render_html([])
@@ -385,6 +388,8 @@ class ExportSiteTests(unittest.TestCase):
             '.scheme-section:not([data-view="cards"]) .scheme-table-wrap',
             html,
         )
+        self.assertIn("@media (max-width: 959px)", html)
+        self.assertIn("defaultViewMode", html)
 
 
 if __name__ == "__main__":

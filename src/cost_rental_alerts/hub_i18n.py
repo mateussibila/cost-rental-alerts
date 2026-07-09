@@ -48,7 +48,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "action.email": {"en": "Email", "pt": "Email"},
     "action.report": {"en": "Report", "pt": "Reportar"},
     "action.about": {"en": "About", "pt": "Sobre"},
-    "action.cost_rental": {"en": "Cost rental", "pt": "Cost rental"},
+    "action.cost_rental": {
+        "en": "What is cost rental?",
+        "pt": "O que é cost rental?",
+    },
     "view.layout": {"en": "Layout", "pt": "Layout"},
     "view.table": {"en": "Table", "pt": "Tabela"},
     "view.cards": {"en": "Cards", "pt": "Cards"},
