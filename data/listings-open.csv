@@ -1,4 +1,7 @@
 name,location,address,price,quantity,beds,status,income_min,income_max,listed_at,open_on,close_on,source,link
+"Dun Óir, Kilternan, Dublin 18",Dublin - D18 Kilternan,"Glenamuck Road, Dun Óir, Kilternan, Dublin 18, Ireland",1375,1,1,open,44571,66000,,,22/07/2026,lda,https://lda.ie/affordable-homes/lda-cost-rental/dun-óir-kilternan-dublin-18-5
 Folkstown Park,Dublin - Balbriggan,"Folkstown Park, Balbriggan, Co. Dublin, Ireland",1150,40,1-3,open,,,,04/06/2026,,tuath,https://tuathhousing.ie/properties/folkstown-park-2/
 Mountneil,Waterford - Carrickperish,"Mountneil, Carrickperish, Co. Waterford, Ireland",1219,1,3,closed,,,,04/06/2026,11/06/2026,tuath,https://tuathhousing.ie/properties/mountneil/
+"Shanganagh Castle Estate, Shankill, Co.Dublin",Dublin - Shankill,"Shanganagh Castle Estate, Shankill, Co.Dublin, Ireland",1250,1,1,open,42857,66000,,,23/07/2026,lda,https://lda.ie/affordable-homes/lda-cost-rental/shanganagh-castle-estate-shankill-dublin-18-6
+"The Crossings, Adamstown, Co. Dublin",Dublin - Adamstown,"The Crossings, Adamstown, Co. Dublin, Ireland",1380,2,1-2,open,47314,66000,,,23/07/2026,lda,https://lda.ie/affordable-homes/lda-cost-rental/the-crossings-adamstown-co-dublin
 Woodside Rise,Dublin - D18 Enniskerry,"Woodside Rise, Enniskerry, Dublin 18, Co. Dublin, Ireland",1257,1,2,open,,,13/07/2026,13/07/2026,20/07/2026,affordablehomes,https://affordablehomes.ie/rent/woodsiderise/
