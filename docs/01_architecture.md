@@ -4,7 +4,7 @@
 
 ```
 run_daily.py
-  → scrape (affordablehomes, lda, tuath)
+  → scrape (affordablehomes, lda, tuath, respond, cluid, circle, oaklee, chi)
   → enrich_cross_source_open_dates()
   → normalize_listing_statuses()
   → upsert_listings() → data/listings.db
@@ -30,7 +30,7 @@ cost-rental-alerts/
 │   ├── addresses.py               # Google Maps addresses
 │   ├── locations.py               # city-neighbourhood formatting
 │   ├── models.py                  # Listing dataclass
-│   └── scrapers/                  # affordablehomes, lda, tuath
+│   └── scrapers/                  # affordablehomes, lda, tuath, respond, cluid, circle, oaklee, chi
 ├── data/                          # generated artefacts
 │   ├── listings.db
 │   ├── listings-export.csv

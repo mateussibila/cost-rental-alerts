@@ -5,7 +5,7 @@
 | Field | Type | Notes |
 |---|---|---|
 | `id` | str | Unique per source listing |
-| `source` | str | `affordablehomes` \| `lda` \| `tuath` |
+| `source` | str | `affordablehomes` \| `lda` \| `tuath` \| `respond` \| `cluid` \| `circle` \| `oaklee` \| `chi` |
 | `title` | str | Scheme name |
 | `location` | str | Raw location from source |
 | `url` | str | Apply / detail page |

@@ -72,7 +72,32 @@ def _compact_bedrooms(bedrooms: str | None) -> str:
     return bedrooms.removesuffix(" bed").strip()
 
 
-SOURCE_PRIORITY = {"affordablehomes": 0, "lda": 1, "tuath": 2}
+SOURCE_PRIORITY = {
+    "affordablehomes": 0,
+    "lda": 1,
+    "tuath": 2,
+    "respond": 3,
+    "cluid": 4,
+    "circle": 5,
+    "oaklee": 6,
+    "chi": 7,
+}
+
+
+def _news_as_listing(item: NewsItem) -> "Listing":
+    from cost_rental_alerts.models import Listing
+
+    return Listing(
+        id=item.listing_id,
+        source=item.source or "",
+        title=item.title,
+        location=item.location,
+        url=item.url,
+        status=item.status,
+        price_from=item.price_from,
+        applications_open_at=item.applications_open_at,
+        applications_close_at=item.applications_close_at,
+    )
 
 
 def _pick_better_item(current: NewsItem, candidate: NewsItem) -> NewsItem:
@@ -87,16 +112,22 @@ def _pick_better_item(current: NewsItem, candidate: NewsItem) -> NewsItem:
 
 
 def _dedupe_news(items: List[NewsItem]) -> List[NewsItem]:
-    """Merge only the same scheme phase (name + open date), not different phases."""
-    best: dict[str, NewsItem] = {}
+    """Merge only clear duplicates (name + price + open and/or close)."""
+    from cost_rental_alerts.schemes import same_scheme_phase
+
+    best: list[NewsItem] = []
     for item in items:
-        key = item.scheme_key or item.listing_id
-        current = best.get(key)
-        if current is None:
-            best[key] = item
+        listing = _news_as_listing(item)
+        match_index = None
+        for index, existing in enumerate(best):
+            if same_scheme_phase(listing, _news_as_listing(existing)):
+                match_index = index
+                break
+        if match_index is None:
+            best.append(item)
         else:
-            best[key] = _pick_better_item(current, item)
-    return list(best.values())
+            best[match_index] = _pick_better_item(best[match_index], item)
+    return best
 
 
 def _is_new_today(item: NewsItem) -> bool:

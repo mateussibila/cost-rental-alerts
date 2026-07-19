@@ -7,6 +7,11 @@ Daily **cost rental** alerts for Ireland. The system scrapes three sources, stor
 - [affordablehomes.ie](https://affordablehomes.ie/rent/)
 - [LDA cost rental](https://lda.ie/affordable-homes/lda-cost-rental/)
 - [Tuath Housing](https://tuathhousing.ie/cost-rental/)
+- [Respond Housing](https://www.respond.ie/cost-rental/)
+- [Clúid Housing](https://www.cluid.ie/cost-rental/)
+- [Circle VHA](https://circlevha.ie/cost-rental/)
+- [Oaklee](https://oaklee.ie/become-a-resident/cost-rental-housing)
+- [Co-operative Housing Ireland](https://www.cooperativehousing.ie/) (monitor — social/owner-occupier today; alerts if Cost Rental appears)
 
 ## Output
 

@@ -2,15 +2,30 @@
 
 ## Source priority
 
-When the same scheme appears on multiple sources, **affordablehomes data wins**.
+When the same scheme phase appears on multiple sources, **affordablehomes data wins** for the merged card/alert line.
 
 | Priority | Source |
 |---|---|
 | 1 | affordablehomes |
 | 2 | lda |
 | 3 | tuath |
+| 4 | respond |
+| 5 | cluid |
+| 6 | circle |
+| 7 | oaklee |
+| 8 | chi |
 
-LDA and Tuath entries are kept only when affordablehomes does not already cover that scheme. A stale AH closed entry does **not** block a new open round on LDA/Tuath.
+Secondary sources are kept whenever they are **not** a clear duplicate of AH. Prefer showing two entries over hiding an available scheme.
+
+**Clear duplicate** (merge only when all of these hold):
+
+- same / overlapping scheme name
+- same price (both present; tolerance €1)
+- matching `applications_open_at` **and/or** `applications_close_at`
+
+If price or dates are missing on either side, keep both entries.
+
+LDA/Tuath/Respond/etc. rows stay when AH does not clearly cover that phase. A stale AH closed entry does **not** block a new open round on another source unless name + price + dates match.
 
 ## Scheme identity (`scheme_key`)
 

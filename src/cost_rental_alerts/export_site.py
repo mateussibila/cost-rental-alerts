@@ -20,7 +20,16 @@ from cost_rental_alerts.notify import report_issue_email, scheme_hub_url
 from cost_rental_alerts.paths import DATA_DIR, REPO_ROOT
 
 TZ = ZoneInfo("Europe/Dublin")
-SOURCE_LINK_PRIORITY = {"affordablehomes": 0, "lda": 1, "tuath": 2}
+SOURCE_LINK_PRIORITY = {
+    "affordablehomes": 0,
+    "lda": 1,
+    "tuath": 2,
+    "respond": 3,
+    "cluid": 4,
+    "circle": 5,
+    "oaklee": 6,
+    "chi": 7,
+}
 DEFAULT_REPORT_ISSUE_REPO = "costrentalhub/cost-rental-alerts"
 
 CSV_PATH = DATA_DIR / "listings-export.csv"
@@ -94,9 +103,52 @@ def normalize_key(value: str | None) -> str:
 
 
 def row_score(row: dict[str, str]) -> tuple[int, int]:
-    source_priority = {"affordablehomes": 3, "lda": 2, "tuath": 1}
+    source_priority = {
+        "affordablehomes": 8,
+        "lda": 7,
+        "tuath": 6,
+        "respond": 5,
+        "cluid": 4,
+        "circle": 3,
+        "oaklee": 2,
+        "chi": 1,
+    }
     filled_fields = sum(1 for value in row.values() if value)
     return filled_fields, source_priority.get(normalize_key(row.get("source")), 0)
+
+
+def _parse_row_price(value: str | None) -> float | None:
+    if not value:
+        return None
+    cleaned = value.strip().replace(",", ".")
+    try:
+        return float(cleaned)
+    except ValueError:
+        return None
+
+
+def _row_as_listing(row: dict[str, str]):
+    from cost_rental_alerts.models import Listing
+
+    def iso_from_hub_date(value: str | None) -> str | None:
+        if not value:
+            return None
+        try:
+            return datetime.strptime(value.strip(), "%d/%m/%Y").date().isoformat()
+        except ValueError:
+            return value.strip() or None
+
+    return Listing(
+        id=row.get("link") or row.get("name") or "row",
+        source=row.get("source") or "",
+        title=row.get("name") or "",
+        location=row.get("location") or "",
+        url=row.get("link") or "",
+        status=row.get("status") or "",
+        price_from=_parse_row_price(row.get("price")),
+        applications_open_at=iso_from_hub_date(row.get("open_on")),
+        applications_close_at=iso_from_hub_date(row.get("close_on")),
+    )
 
 
 def scheme_key(row: dict[str, str]) -> tuple[str, str, str, str, str]:
@@ -151,13 +203,31 @@ def active_links_by_name(rows: Iterable[dict[str, str]]) -> dict[str, dict[str, 
 
 
 def build_schemes(rows: Iterable[dict[str, str]]) -> list[Scheme]:
-    grouped: dict[tuple[str, str, str, str, str], list[dict[str, str]]] = {}
-    for row in rows:
-        if normalize_key(row.get("status")) in {"open", "opening soon"}:
-            grouped.setdefault(scheme_key(row), []).append(row)
+    from cost_rental_alerts.schemes import same_scheme_phase
+
+    active_rows = [
+        row
+        for row in rows
+        if normalize_key(row.get("status")) in {"open", "opening soon"}
+    ]
+
+    clusters: list[list[dict[str, str]]] = []
+    for row in active_rows:
+        listing = _row_as_listing(row)
+        placed = False
+        for cluster in clusters:
+            if any(
+                same_scheme_phase(listing, _row_as_listing(existing))
+                for existing in cluster
+            ):
+                cluster.append(row)
+                placed = True
+                break
+        if not placed:
+            clusters.append([row])
 
     schemes: list[Scheme] = []
-    for group_rows in grouped.values():
+    for group_rows in clusters:
         best = max(group_rows, key=row_score)
         links_by_source = _best_link_per_source(group_rows)
         sources = sort_source_links(links_by_source.values())

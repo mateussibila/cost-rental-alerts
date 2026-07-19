@@ -24,7 +24,16 @@ from cost_rental_alerts.schemes import (
     apply_affordablehomes_closed_overrides_to_db,
     enrich_cross_source_open_dates,
 )
-from cost_rental_alerts.scrapers import scrape_affordablehomes, scrape_lda, scrape_tuath
+from cost_rental_alerts.scrapers import (
+    scrape_affordablehomes,
+    scrape_chi,
+    scrape_circle,
+    scrape_cluid,
+    scrape_lda,
+    scrape_oaklee,
+    scrape_respond,
+    scrape_tuath,
+)
 
 
 def normalize_listing_statuses(listings: list[Listing]) -> None:
@@ -47,8 +56,15 @@ class SourceResult:
 
 
 def _should_alert_scrape_failure(result: SourceResult) -> bool:
-    """Tuath blocks GitHub Actions IPs (403) while the site works in a browser."""
-    if result.name == "tuath" and result.error and "403" in result.error:
+    """Some AHB sites block GitHub Actions IPs (403) while working in a browser."""
+    if result.error and "403" in result.error and result.name in {
+        "tuath",
+        "circle",
+        "cluid",
+        "respond",
+        "oaklee",
+        "chi",
+    }:
         return False
     return True
 
@@ -61,6 +77,11 @@ def scrape_sources() -> tuple[list[Listing], list[SourceResult]]:
         ("affordablehomes", "affordablehomes.ie", scrape_affordablehomes),
         ("lda", "lda.ie", scrape_lda),
         ("tuath", "tuathhousing.ie", scrape_tuath),
+        ("respond", "respond.ie", scrape_respond),
+        ("cluid", "cluid.ie", scrape_cluid),
+        ("circle", "circlevha.ie", scrape_circle),
+        ("oaklee", "oaklee.ie", scrape_oaklee),
+        ("chi", "cooperativehousing.ie", scrape_chi),
     ]:
         try:
             found = scraper()
@@ -123,7 +144,7 @@ def main() -> int:
     upsert_listings(conn, listings)
     closed_stale = apply_affordablehomes_closed_overrides_to_db(conn, listings)
     if closed_stale:
-        print(f"[db] Closed {closed_stale} stale open LDA/Tuath row(s) from AH data")
+        print(f"[db] Closed {closed_stale} stale open secondary-source row(s) from AH data")
 
     failed_sources = [
         result

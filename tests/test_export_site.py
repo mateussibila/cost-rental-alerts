@@ -163,7 +163,8 @@ class ExportSiteTests(unittest.TestCase):
         schemes = build_schemes(rows)
         enrich_scheme_sources(schemes, rows)
 
-        self.assertEqual(len(schemes), 2)
+        self.assertEqual(len(schemes), 1)
+        self.assertEqual(schemes[0].name, "Mountneil")
         self.assertEqual(
             [(source.source, source.link) for source in sort_source_links(schemes[0].sources)],
             [

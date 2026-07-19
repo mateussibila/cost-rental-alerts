@@ -1,9 +1,16 @@
 """Logical scheme identity — distinguishes phases of the same development name."""
 
+from __future__ import annotations
+
 from collections import defaultdict
 from datetime import date
 
 from cost_rental_alerts.models import Listing
+
+# Sources that may lag behind AH when their scrape fails (e.g. 403).
+SECONDARY_SOURCES = frozenset(
+    {"lda", "tuath", "respond", "cluid", "circle", "oaklee", "chi"}
+)
 
 
 def normalize_scheme_name(title: str) -> str:
@@ -48,34 +55,86 @@ def listing_scheme_key(listing: Listing) -> str:
     )
 
 
-def _open_dates_match(
-    ah_open: str,
-    other_open: str,
+def _dates_within(
+    left: str,
+    right: str,
     *,
     max_days: int = 1,
 ) -> bool:
-    ah_date = ah_open[:10]
-    other_date = other_open[:10]
-    if ah_date == other_date:
+    left_day = left[:10]
+    right_day = right[:10]
+    if left_day == right_day:
         return True
     try:
-        ah_day = date.fromisoformat(ah_date)
-        other_day = date.fromisoformat(other_date)
+        a = date.fromisoformat(left_day)
+        b = date.fromisoformat(right_day)
     except ValueError:
         return False
-    return abs((ah_day - other_day).days) <= max_days
+    return abs((a - b).days) <= max_days
+
+
+def prices_match(
+    left: float | None,
+    right: float | None,
+    *,
+    tolerance: float = 1.0,
+) -> bool:
+    """Require both prices; missing price means not a clear duplicate."""
+    if left is None or right is None:
+        return False
+    return abs(float(left) - float(right)) <= tolerance
+
+
+def dates_share_open_or_close(left: Listing, right: Listing) -> bool:
+    """True when open dates match and/or close dates match."""
+    open_match = False
+    close_match = False
+    if left.applications_open_at and right.applications_open_at:
+        open_match = _dates_within(left.applications_open_at, right.applications_open_at)
+    if left.applications_close_at and right.applications_close_at:
+        close_match = _dates_within(left.applications_close_at, right.applications_close_at)
+    return open_match or close_match
+
+
+def same_scheme_phase(left: Listing, right: Listing) -> bool:
+    """
+    Clear duplicate across sources: same name, same price, and matching open and/or close.
+
+    Prefer showing two entries when any of these signals is missing or disagrees.
+    """
+    if not names_overlap(left.title, right.title):
+        return False
+    if not prices_match(left.price_from, right.price_from):
+        return False
+    if not dates_share_open_or_close(left, right):
+        return False
+    return True
 
 
 def matching_affordablehomes_closed(ah: Listing, other: Listing) -> bool:
-    """True when a closed AH row should override a stale open LDA/Tuath row."""
+    """True when a closed AH row should override a stale open secondary-source row."""
     if ah.source != "affordablehomes" or ah.status != "closed":
         return False
-    if other.source not in {"lda", "tuath"} or other.status != "open":
+    if other.source not in SECONDARY_SOURCES or other.status != "open":
         return False
     if not names_overlap(ah.title, other.title):
         return False
+    # Prefer strict phase match when both sides are well populated.
+    if (
+        ah.price_from is not None
+        and other.price_from is not None
+        and ah.applications_open_at
+        and other.applications_open_at
+    ):
+        return same_scheme_phase(ah, other) or (
+            prices_match(ah.price_from, other.price_from)
+            and _dates_within(ah.applications_open_at, other.applications_open_at)
+        )
     if ah.applications_open_at and other.applications_open_at:
-        if not _open_dates_match(ah.applications_open_at, other.applications_open_at):
+        if not _dates_within(ah.applications_open_at, other.applications_open_at):
+            return False
+    if ah.price_from is not None and other.price_from is not None:
+        if not prices_match(ah.price_from, other.price_from):
             return False
     return True
 
@@ -91,16 +150,16 @@ def apply_affordablehomes_closed_overrides_to_targets(
     ah_listings: list[Listing],
 ) -> list[Listing]:
     """Apply AH closed overrides. Returns targets that were changed."""
-    ah_by_name: dict[str, list[Listing]] = defaultdict(list)
-    for listing in ah_listings:
-        if listing.source == "affordablehomes" and listing.status == "closed":
-            ah_by_name[normalize_scheme_name(listing.title)].append(listing)
-
+    ah_closed = [
+        listing
+        for listing in ah_listings
+        if listing.source == "affordablehomes" and listing.status == "closed"
+    ]
     changed: list[Listing] = []
     for listing in targets:
-        if listing.source not in {"lda", "tuath"} or listing.status != "open":
+        if listing.source not in SECONDARY_SOURCES or listing.status != "open":
             continue
-        for ah in ah_by_name.get(normalize_scheme_name(listing.title), []):
+        for ah in ah_closed:
             if matching_affordablehomes_closed(ah, listing):
                 apply_ah_closed_override(ah, listing)
                 changed.append(listing)
@@ -111,25 +170,19 @@ def apply_affordablehomes_closed_overrides_to_targets(
 def is_covered_by_affordablehomes(
     listing: Listing, ah_listings: list[Listing]
 ) -> bool:
-    """True when affordablehomes already has this scheme (AH data wins)."""
-    sk = listing_scheme_key(listing)
+    """True only when AH has a clear same-phase duplicate (name+price+dates)."""
     for ah in ah_listings:
-        if listing_scheme_key(ah) == sk:
+        if same_scheme_phase(listing, ah):
             return True
-
-    for ah in ah_listings:
-        if not names_overlap(ah.title, listing.title):
-            continue
-        # Stale AH closed entry does not cover a new open round on LDA/Tuath.
-        if listing.status == "open" and ah.status != "open":
-            continue
-        return True
-
     return False
 
 
 def merge_listings_ah_first(listings: list[Listing]) -> list[Listing]:
-    """Keep all AH entries; add LDA/Tuath only when not already on AH."""
+    """
+    Keep AH entries and add other sources unless they are a clear AH duplicate.
+
+    Prefer duplicate cards over dropping a scheme that might still be available.
+    """
     ah = [listing for listing in listings if listing.source == "affordablehomes"]
     merged = list(ah)
     for listing in listings:
@@ -141,7 +194,7 @@ def merge_listings_ah_first(listings: list[Listing]) -> list[Listing]:
 
 
 def apply_affordablehomes_closed_overrides(listings: list[Listing]) -> None:
-    """When AH marks a scheme phase closed, override stale open LDA/Tuath rows."""
+    """When AH marks a scheme phase closed, override stale open secondary-source rows."""
     apply_affordablehomes_closed_overrides_to_targets(listings, listings)
 
 
@@ -150,7 +203,7 @@ def apply_affordablehomes_closed_overrides_to_db(
     scraped: list[Listing],
 ) -> int:
     """
-    Close stale open LDA/Tuath rows already in the database.
+    Close stale open secondary-source rows already in the database.
 
     Used when a source scrape fails (e.g. Tuath 403 on GitHub Actions) but AH still
     reports the same phase as closed.
@@ -161,13 +214,15 @@ def apply_affordablehomes_closed_overrides_to_db(
     if not ah_listings:
         return 0
 
+    placeholders = ", ".join("?" for _ in SECONDARY_SOURCES)
     rows = conn.execute(
-        """
+        f"""
         SELECT * FROM listings
-        WHERE source IN ('tuath', 'lda')
+        WHERE source IN ({placeholders})
           AND status = 'open'
           AND category = 'rent'
-        """
+        """,
+        tuple(sorted(SECONDARY_SOURCES)),
     ).fetchall()
     if not rows:
         return 0
