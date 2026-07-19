@@ -104,6 +104,53 @@ def get_listing(conn: sqlite3.Connection, listing_id: str) -> Optional[sqlite3.R
     return conn.execute("SELECT * FROM listings WHERE id = ?", (listing_id,)).fetchone()
 
 
+def listing_from_row(row: sqlite3.Row) -> Listing:
+    return Listing(
+        id=row["id"],
+        source=row["source"],
+        title=row["title"],
+        location=row["location"] or "",
+        url=row["url"],
+        status=row["status"],
+        category=row["category"],
+        price_from=row["price_from"],
+        bedrooms=row["bedrooms"],
+        quantity=row["quantity"],
+        income_min=row["income_min"],
+        income_max=row["income_max"],
+        applications_open_at=row["applications_open_at"],
+        applications_close_at=row["applications_close_at"],
+        listed_at=row["listed_at"],
+        scheme_key=row["scheme_key"],
+        address=row["address"],
+    )
+
+
+def persist_listing_closed(conn: sqlite3.Connection, listing: Listing) -> None:
+    ts = now_iso()
+    existing = get_listing(conn, listing.id)
+    if existing is None:
+        return
+    status_changed_at = existing["status_changed_at"]
+    if existing["status"] != listing.status:
+        status_changed_at = ts
+    conn.execute(
+        """
+        UPDATE listings SET
+            status = ?,
+            applications_close_at = COALESCE(?, applications_close_at),
+            status_changed_at = ?
+        WHERE id = ?
+        """,
+        (
+            listing.status,
+            listing.applications_close_at,
+            status_changed_at,
+            listing.id,
+        ),
+    )
+
+
 def _resolve_scheme_key(listing: Listing, existing: Optional[sqlite3.Row] = None) -> str:
     open_at = listing.applications_open_at
     listed_at = listing.listed_at

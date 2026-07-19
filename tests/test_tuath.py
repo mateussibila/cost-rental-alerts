@@ -81,6 +81,65 @@ class AffordableHomesOverrideTests(unittest.TestCase):
         self.assertEqual(listings[1].status, "closed")
         self.assertEqual(listings[1].applications_close_at, "2026-06-22")
 
+    def test_closed_affordablehomes_overrides_open_tuath_with_one_day_open_drift(self):
+        listings = [
+            Listing(
+                id="affordablehomes:folkstown",
+                source="affordablehomes",
+                title="Folkstown Park",
+                location="Dublin",
+                url="https://example.test/ah",
+                status="closed",
+                category="rent",
+                applications_open_at="2026-06-03",
+                applications_close_at="2026-06-22",
+            ),
+            Listing(
+                id="tuath:folkstown",
+                source="tuath",
+                title="Folkstown Park",
+                location="Dublin",
+                url="https://example.test/tuath",
+                status="open",
+                category="rent",
+                applications_open_at="2026-06-04",
+            ),
+        ]
+
+        apply_affordablehomes_closed_overrides(listings)
+
+        self.assertEqual(listings[1].status, "closed")
+        self.assertEqual(listings[1].applications_close_at, "2026-06-22")
+
+    def test_closed_affordablehomes_does_not_override_different_phase(self):
+        listings = [
+            Listing(
+                id="affordablehomes:folkstown-old",
+                source="affordablehomes",
+                title="Folkstown Park",
+                location="Dublin",
+                url="https://example.test/ah-old",
+                status="closed",
+                category="rent",
+                applications_open_at="2026-03-20",
+                applications_close_at="2026-03-27",
+            ),
+            Listing(
+                id="tuath:folkstown",
+                source="tuath",
+                title="Folkstown Park",
+                location="Dublin",
+                url="https://example.test/tuath",
+                status="open",
+                category="rent",
+                applications_open_at="2026-06-04",
+            ),
+        ]
+
+        apply_affordablehomes_closed_overrides(listings)
+
+        self.assertEqual(listings[1].status, "open")
+
 
 if __name__ == "__main__":
     unittest.main()

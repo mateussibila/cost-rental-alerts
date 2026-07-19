@@ -21,6 +21,7 @@ from cost_rental_alerts.notify import (
 )
 from cost_rental_alerts.schemes import (
     apply_affordablehomes_closed_overrides,
+    apply_affordablehomes_closed_overrides_to_db,
     enrich_cross_source_open_dates,
 )
 from cost_rental_alerts.scrapers import scrape_affordablehomes, scrape_lda, scrape_tuath
@@ -120,6 +121,9 @@ def main() -> int:
     apply_affordablehomes_closed_overrides(listings)
     normalize_listing_statuses(listings)
     upsert_listings(conn, listings)
+    closed_stale = apply_affordablehomes_closed_overrides_to_db(conn, listings)
+    if closed_stale:
+        print(f"[db] Closed {closed_stale} stale open LDA/Tuath row(s) from AH data")
 
     failed_sources = [
         result
